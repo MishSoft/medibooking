@@ -1,0 +1,16 @@
+{
+  "name": "my-monorepo",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0"
+  }
+}
