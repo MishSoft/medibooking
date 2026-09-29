@@ -1,3 +1,1 @@
-import { defineConfig } from "prisma/config";
-
-export default defineConfig({});
+export { default } from "./prisma/prisma.config";
