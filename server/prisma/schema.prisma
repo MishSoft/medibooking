@@ -12,21 +12,29 @@ datasource db {
   provider = "postgresql"
 }
 
-
 enum Role {
   PATIENT
   DOCTOR
   CLINIC_ADMIN
 }
 
+enum Gender {
+  MALE
+  FEMALE
+  NONBINARY
+  UNDISCLOSED
+}
+
 model User {
-  id             String         @id @default(uuid())
-  email          String         @unique
-  password       String
-  fullName       String
-  role           Role           @default(PATIENT)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  phone     String
+  role      Role     @default(PATIENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   patientProfile PatientProfile?
   doctorProfile  DoctorProfile?
@@ -34,38 +42,49 @@ model User {
 }
 
 model PatientProfile {
-  id         String   @id @default(uuid())
-  userId     String   @unique
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  personalId String?
-  birthDate  DateTime?
+  personalId            String?   @unique
+  address               String
+  city                  String
+  gender                Gender    @default(MALE)
+  birthDate             DateTime?
+  emergencyContactName  String?
+  emergencyContactPhone String?
 }
 
 model DoctorProfile {
-  id           String   @id @default(uuid())
-  userId       String   @unique
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  licenseNo    String   @unique
-  bio          String?
-  pricePerVisit Decimal
-
-  clinicId     String
-  clinic       Clinic   @relation(fields: [clinicId], references: [id])
+  id               String    @id @default(uuid())
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  personalId       String    @unique
+  licenseNo        String    @unique
+  primarySpecialty String
+  yearsOfPractice  Int
+  bio              String?
+  emergencyPhone   String
+  gender           Gender?
+  birthDate        DateTime?
+  city             String
+  clinicId         String
+  clinic           Clinic    @relation(fields: [clinicId], references: [id])
 }
 
 model Clinic {
-  id        String          @id @default(uuid())
-  name      String
-  email     String
-  phone     String?
-  address   String?
-
-  adminId   String          @unique
-  admin     User            @relation(fields: [adminId], references: [id])
-
-  doctors   DoctorProfile[]
+  id             String          @id @default(uuid())
+  name           String
+  legalName      String
+  taxId          String          @unique
+  email          String
+  phone          String
+  address        String?
+  publicEmail    String
+  receptionPhone String
+  adminId        String          @unique
+  admin          User            @relation(fields: [adminId], references: [id])
+  departments    String[]
+  doctors        DoctorProfile[]
+  city           String?
 }
-
-
