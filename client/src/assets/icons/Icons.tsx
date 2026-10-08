@@ -149,6 +149,26 @@ export function LockIcon(props: IconProps) {
   );
 }
 
+export function PatientIdIcon(props: IconProps) {
+  return (
+    <svg
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      {...props}
+    >
+      <rect x="3.5" y="5" width="17" height="14" rx="2" />
+      <circle cx="8.5" cy="11" r="1.75" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M6 15.5c.7-1.2 1.5-1.75 2.5-1.75s1.8.55 2.5 1.75M14 10h3.5m-3.5 3h3.5"
+      />
+    </svg>
+  );
+}
+
 export function FaceBiometricIcon(props: IconProps) {
   return (
     <svg

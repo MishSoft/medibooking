@@ -1,8 +1,12 @@
+import { useState } from "react";
 import PatientRegistration from "../../components/auth/PatientRegistration";
+import PatientSignIn from "../../components/auth/PatientSignIn";
 import DoctorSignIn from "../../components/auth/DoctorSignIn";
 import ClinicRegistration from "../../components/auth/ClinicRegistration";
 
 function PathSelectorPage() {
+  const [showPatientSignIn, setShowPatientSignIn] = useState(false);
+
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-[#060E20]">
       <div
@@ -19,7 +23,15 @@ function PathSelectorPage() {
         />
         <section className="absolute inset-0 flex items-center justify-end px-6 py-5 sm:px-10 lg:pr-[calc(7vw+100px)] lg:pl-[7vw]">
           <div className="w-full max-w-[560px] skew-x-[15deg]">
-            <PatientRegistration />
+            {showPatientSignIn ? (
+              <PatientSignIn
+                onRegisterClick={() => setShowPatientSignIn(false)}
+              />
+            ) : (
+              <PatientRegistration
+                onSignInClick={() => setShowPatientSignIn(true)}
+              />
+            )}
 
             <DoctorSignIn />
           </div>

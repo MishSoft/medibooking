@@ -5,7 +5,11 @@ import {
   RecordsFolderIcon,
 } from "../../assets/icons/Icons";
 
-function PatientRegistration() {
+type PatientRegistrationProps = {
+  onSignInClick: () => void;
+};
+
+function PatientRegistration({ onSignInClick }: PatientRegistrationProps) {
   return (
     <div>
       <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-300/10 px-4 py-2 text-xs font-semibold tracking-[0.12em] text-emerald-300 sm:text-sm">
@@ -59,12 +63,13 @@ function PatientRegistration() {
             className="h-4 w-4"
           />
         </button>
-        <a
-          className="text-sm text-slate-300 transition-colors hover:text-emerald-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-200"
-          href="#patient-sign-in"
+        <button
+          className="cursor-pointer text-sm text-slate-300 transition-colors hover:text-emerald-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-200"
+          onClick={onSignInClick}
+          type="button"
         >
           Existing patient? <b className="underline">Sign in</b>
-        </a>
+        </button>
       </div>
       <div className="my-4 h-px bg-gradient-to-r from-emerald-300/25 via-emerald-100/15 to-transparent" />
     </div>
