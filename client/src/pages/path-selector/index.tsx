@@ -3,9 +3,11 @@ import PatientRegistration from "../../components/auth/PatientRegistration";
 import PatientSignIn from "../../components/auth/PatientSignIn";
 import DoctorSignIn from "../../components/auth/DoctorSignIn";
 import ClinicRegistration from "../../components/auth/ClinicRegistration";
+import ClinicSignIn from "../../components/auth/ClinicSignIn";
 
 function PathSelectorPage() {
   const [showPatientSignIn, setShowPatientSignIn] = useState(false);
+  const [showClinicSignIn, setShowClinicSignIn] = useState(false);
 
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-[#060E20]">
@@ -46,7 +48,15 @@ function PathSelectorPage() {
         />
         <section className="flex min-h-screen items-center justify-end px-6 py-5 sm:px-10 lg:px-[7vw]">
           <div className="w-full max-w-[520px]">
-            <ClinicRegistration />
+            {showClinicSignIn ? (
+              <ClinicSignIn
+                onRegisterClick={() => setShowClinicSignIn(false)}
+              />
+            ) : (
+              <ClinicRegistration
+                onSignInClick={() => setShowClinicSignIn(true)}
+              />
+            )}
           </div>
         </section>
       </div>

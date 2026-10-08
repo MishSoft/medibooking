@@ -149,6 +149,67 @@ export function LockIcon(props: IconProps) {
   );
 }
 
+export function EmailIcon(props: IconProps) {
+  return (
+    <svg
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      {...props}
+    >
+      <rect x="3.5" y="5.5" width="17" height="13" rx="2" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m4.5 7 7.5 6 7.5-6"
+      />
+    </svg>
+  );
+}
+
+export function SecurityKeyIcon(props: IconProps) {
+  return (
+    <svg
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      {...props}
+    >
+      <circle cx="8" cy="12" r="4" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 12h8m-3 0v3m-3-3v2"
+      />
+    </svg>
+  );
+}
+
+export function ShieldCheckIcon(props: IconProps) {
+  return (
+    <svg
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      {...props}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 3 19 6v5c0 4.5-2.8 8-7 10-4.2-2-7-5.5-7-10V6l7-3Z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m9 12 2 2 4-4"
+      />
+    </svg>
+  );
+}
+
 export function PatientIdIcon(props: IconProps) {
   return (
     <svg

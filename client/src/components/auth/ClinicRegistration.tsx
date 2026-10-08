@@ -5,9 +5,13 @@ import {
   ClinicNetworkIcon,
 } from "../../assets/icons/Icons";
 
-function ClinicRegistration() {
+type ClinicRegistrationProps = {
+  onSignInClick: () => void;
+};
+
+function ClinicRegistration({ onSignInClick }: ClinicRegistrationProps) {
   return (
-    <div>
+    <div className="-ml-[100px]">
       <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-4 py-2 text-xs font-semibold tracking-[0.12em] text-cyan-200 sm:text-sm">
         <ClinicBuildingIcon
           aria-hidden="true"
@@ -64,12 +68,13 @@ function ClinicRegistration() {
             className="h-4 w-4"
           />
         </button>
-        <a
-          className="text-sm text-slate-400 transition-colors hover:text-cyan-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-200"
-          href="#clinic-admin"
+        <button
+          className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-cyan-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-200"
+          onClick={onSignInClick}
+          type="button"
         >
           Clinic admin? <b className="underline">Sign in</b>
-        </a>
+        </button>
       </div>
     </div>
   );
