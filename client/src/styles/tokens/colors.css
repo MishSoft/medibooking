@@ -1,0 +1,93 @@
+/* ==========================================================================
+   Color tokens — Clinical Precision v1.0.4-LTS
+   Raw values live in :root (dark, the spec's base mode) and are swapped by
+   [data-theme="light"]. Utilities (bg-*, text-*, border-*, ...) are mapped
+   via @theme inline so they follow the active theme.
+   ========================================================================== */
+
+:root {
+  /* Primary — Bio-Luminescent Emerald (active, commitment, affirmation) */
+  --cp-primary: #4edea3;
+  --cp-primary-container: #10b981;
+  --cp-on-primary-container: #00422b;
+  --cp-primary-fixed: #6ffbbe;
+
+  /* Secondary — Medical Cyan (diagnostic telemetry, interactive triggers) */
+  --cp-secondary: #4cd7f6;
+  --cp-secondary-container: #03b5d3;
+  --cp-on-secondary: #003640;
+  --cp-secondary-fixed: #acedff;
+
+  /* Surface tiers — spatial depth progression (tier 0 → 5) */
+  --cp-surface-lowest: #060e20;
+  --cp-surface-dim: #0b1326;
+  --cp-surface-container-low: #131b2e;
+  --cp-surface-container: #171f33;
+  --cp-surface-container-high: #222a3d;
+  --cp-surface-highest: #2d3449;
+
+  /* Content on surfaces — inferred, not defined by the spec */
+  --cp-on-surface: #dae2fd;
+  --cp-on-surface-variant: #bbcabf;
+
+  /* Status */
+  --cp-success: #10b981;
+  --cp-info: #71a1ff;
+  --cp-warning: #f59e0b;
+  --cp-error: #ffb4ab;
+}
+
+/* Light theme — NOT defined by the spec; values are inferred counterparts */
+[data-theme="light"] {
+  --cp-primary: #006c49;
+  --cp-primary-container: #10b981;
+  --cp-on-primary-container: #00422b;
+  --cp-primary-fixed: #6ffbbe;
+
+  --cp-secondary: #00687a;
+  --cp-secondary-container: #03b5d3;
+  --cp-on-secondary: #ffffff;
+  --cp-secondary-fixed: #acedff;
+
+  --cp-surface-lowest: #ffffff;
+  --cp-surface-dim: #f5f7fb;
+  --cp-surface-container-low: #eef1f7;
+  --cp-surface-container: #e8ecf3;
+  --cp-surface-container-high: #e1e6ee;
+  --cp-surface-highest: #d9dfe9;
+
+  --cp-on-surface: #0b1326;
+  --cp-on-surface-variant: #45556c;
+
+  --cp-success: #047857;
+  --cp-info: #2f6bdb;
+  --cp-warning: #b45309;
+  --cp-error: #ba1a1a;
+}
+
+@theme inline {
+  --color-primary: var(--cp-primary);
+  --color-primary-container: var(--cp-primary-container);
+  --color-on-primary-container: var(--cp-on-primary-container);
+  --color-primary-fixed: var(--cp-primary-fixed);
+
+  --color-secondary: var(--cp-secondary);
+  --color-secondary-container: var(--cp-secondary-container);
+  --color-on-secondary: var(--cp-on-secondary);
+  --color-secondary-fixed: var(--cp-secondary-fixed);
+
+  --color-surface-lowest: var(--cp-surface-lowest);
+  --color-surface-dim: var(--cp-surface-dim);
+  --color-surface-container-low: var(--cp-surface-container-low);
+  --color-surface-container: var(--cp-surface-container);
+  --color-surface-container-high: var(--cp-surface-container-high);
+  --color-surface-highest: var(--cp-surface-highest);
+
+  --color-on-surface: var(--cp-on-surface);
+  --color-on-surface-variant: var(--cp-on-surface-variant);
+
+  --color-success: var(--cp-success);
+  --color-info: var(--cp-info);
+  --color-warning: var(--cp-warning);
+  --color-error: var(--cp-error);
+}
