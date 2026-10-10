@@ -59,7 +59,7 @@ function ClinicRegistration({ onSignInClick }: ClinicRegistrationProps) {
       </ul>
       <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
         <button
-          className="inline-flex items-center gap-3 rounded-xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 shadow-[0_8px_28px_rgba(34,211,238,0.2)] transition-colors hover:bg-cyan-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200"
+          className="cursor-pointer inline-flex items-center gap-3 rounded-xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 shadow-[0_8px_28px_rgba(34,211,238,0.2)] transition-colors hover:bg-cyan-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200"
           type="button"
         >
           Apply for Clinic Tenancy

@@ -54,7 +54,7 @@ function PatientRegistration({ onSignInClick }: PatientRegistrationProps) {
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3">
         <button
-          className="inline-flex items-center gap-3 rounded-xl bg-emerald-400 px-5 py-3 text-sm font-semibold text-emerald-950 shadow-[0_8px_28px_rgba(52,211,153,0.2)] transition-colors hover:bg-emerald-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-200"
+          className="cursor-pointer inline-flex items-center gap-3 rounded-xl bg-emerald-400 px-5 py-3 text-sm font-semibold text-emerald-950 shadow-[0_8px_28px_rgba(52,211,153,0.2)] transition-colors hover:bg-emerald-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-200"
           type="button"
         >
           Continue to Patient Registration
