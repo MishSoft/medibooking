@@ -17,6 +17,14 @@ function PathSelectorPage() {
          after:absolute after:right-0 after:top-0 after:h-full after:w-[1px]
          after:bg-[repeating-linear-gradient(to_bottom,#4EDEA3_0_4px,transparent_4px_6px)]"
       >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute left-[52%] top-[8%] h-105 w-105 skew-x-15 rounded-full bg-[#1F5C3F]/50 blur-[90px]"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-[6%] left-[75%] h-90 w-90 skew-x-15 rounded-full bg-[#0E4A4A]/40 blur-[90px]"
+        />
         <img
           alt=""
           aria-hidden="true"
@@ -40,6 +48,14 @@ function PathSelectorPage() {
         </section>
       </div>
       <div className="absolute inset-0 -z-[9] overflow-hidden bg-[linear-gradient(105deg,#03151F_0%,#09152B_50%,#060E20_100%)]">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute left-[50%] top-[30%] h-100 w-75 rounded-full bg-[#0A2A4A]/50 blur-[90px]"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-[-10%] right-[5%] h-130 w-130 rounded-full bg-[#164A5A]/45 blur-[100px]"
+        />
         <img
           alt=""
           aria-hidden="true"
