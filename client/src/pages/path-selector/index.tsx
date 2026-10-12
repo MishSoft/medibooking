@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "react-router";
 import PatientRegistration from "../../components/auth/PatientRegistration";
 import PatientSignIn from "../../components/auth/PatientSignIn";
 import DoctorSignIn from "../../components/auth/DoctorSignIn";
@@ -6,7 +7,15 @@ import ClinicRegistration from "../../components/auth/ClinicRegistration";
 import ClinicSignIn from "../../components/auth/ClinicSignIn";
 
 function PathSelectorPage() {
-  const [showPatientSignIn, setShowPatientSignIn] = useState(false);
+  const location = useLocation();
+  const shouldShowPatientSignIn =
+    typeof location.state === "object" &&
+    location.state !== null &&
+    "showPatientSignIn" in location.state &&
+    location.state.showPatientSignIn === true;
+  const [showPatientSignIn, setShowPatientSignIn] = useState(
+    shouldShowPatientSignIn,
+  );
   const [showClinicSignIn, setShowClinicSignIn] = useState(false);
 
   return (
