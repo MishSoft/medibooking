@@ -1,5 +1,7 @@
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import FormInputsWrapper from "../../components/FormInputsWrapper";
 import Footer from "../../components/Footer";
 import Header from "../../components/Header";
@@ -13,28 +15,48 @@ import {
 } from "../../assets/icons/Icons";
 import Button from "../../shared/ui/Button";
 import Input from "../../shared/ui/Input";
+import { Gender } from "../../types/enums";
+import {
+  patientRegistrationFormSchema,
+  type PatientRegistrationFormInput,
+  type PatientRegistrationFormOutput,
+} from "../../schemas/patientRegistration.schema";
 
-const genderOptions = ["Female", "Male", "Non-binary", "Undisclosed"];
+const genderOptions = [
+  { label: "Female", value: Gender.FEMALE },
+  { label: "Male", value: Gender.MALE },
+  { label: "Non-binary", value: Gender.NONBINARY },
+  { label: "Undisclosed", value: Gender.UNDISCLOSED },
+];
 
 function PatientRegistrationPage() {
   const [submissionMessage, setSubmissionMessage] = useState("");
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<
+    PatientRegistrationFormInput,
+    unknown,
+    PatientRegistrationFormOutput
+  >({
+    resolver: zodResolver(patientRegistrationFormSchema),
+    defaultValues: {
+      gender: Gender.FEMALE,
+      city: "Tbilisi (Central)",
+      healthRecordConsent: false,
+      appointmentReminders: false,
+    },
+  });
 
-    const formData = new FormData(event.currentTarget);
-    const password = formData.get("password");
-    const confirmPassword = formData.get("confirmPassword");
-
-    if (password !== confirmPassword) {
-      setSubmissionMessage("Passwords do not match. Please check both fields.");
-      return;
-    }
-
+  const onSubmit = (data: PatientRegistrationFormOutput) => {
+    // TODO: call patient registration API
+    void data;
     setSubmissionMessage(
       "Registration is not connected to a submission service yet.",
     );
-  }
+  };
 
   return (
     <div className="min-h-screen bg-surface-dim font-inter text-on-surface">
@@ -57,7 +79,11 @@ function PatientRegistrationPage() {
             </p>
           </div>
 
-          <form className="space-y-5" onSubmit={handleSubmit}>
+          <form
+            className="space-y-5"
+            noValidate
+            onSubmit={handleSubmit(onSubmit)}
+          >
             <FormInputsWrapper
               formInputsSectionNumber={1}
               formInputsSectionTitle="Personal Identity"
@@ -72,17 +98,19 @@ function PatientRegistrationPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
                   autoComplete="given-name"
+                  error={errors.firstName?.message}
                   label="First Name (Legal)"
-                  name="firstName"
                   placeholder="e.g. Tamar"
                   required
+                  {...register("firstName")}
                 />
                 <Input
                   autoComplete="family-name"
+                  error={errors.lastName?.message}
                   label="Last Name (Surname)"
-                  name="lastName"
                   placeholder="e.g. Chikovani"
                   required
+                  {...register("lastName")}
                 />
               </div>
 
@@ -91,36 +119,40 @@ function PatientRegistrationPage() {
                   Biological / Legal Gender
                 </legend>
                 <div className="grid grid-cols-2 gap-1 rounded-lg bg-surface-lowest p-1 sm:grid-cols-4">
-                  {genderOptions.map((gender, index) => (
+                  {genderOptions.map(({ label, value }) => (
                     <label
                       className="cursor-pointer rounded-md px-2 py-2 text-center text-label-md text-on-surface-variant transition-colors has-[:checked]:bg-surface-container-high has-[:checked]:text-primary has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-primary"
-                      key={gender}
+                      key={value}
                     >
                       <input
                         className="sr-only"
-                        defaultChecked={index === 0}
-                        name="gender"
-                        required={index === 0}
                         type="radio"
-                        value={gender}
+                        value={value}
+                        {...register("gender")}
                       />
-                      {gender}
+                      {label}
                     </label>
                   ))}
                 </div>
+                {errors.gender && (
+                  <p className="mt-1 text-body-sm text-error" role="alert">
+                    {errors.gender.message}
+                  </p>
+                )}
               </fieldset>
 
               <Input
                 className="mt-4"
+                error={errors.birthDate?.message}
                 label="Date of Birth"
                 labelAdornment={
                   <span className="text-body-sm text-on-surface-variant">
                     DD/MM/YYYY
                   </span>
                 }
-                name="dateOfBirth"
                 required
                 type="date"
+                {...register("birthDate")}
               />
             </FormInputsWrapper>
 
@@ -139,6 +171,7 @@ function PatientRegistrationPage() {
               }
             >
               <Input
+                error={errors.personalId?.message}
                 label="National ID Number (Personal Code)"
                 labelAdornment={
                   <span className="text-label-md text-secondary">
@@ -147,8 +180,6 @@ function PatientRegistrationPage() {
                 }
                 leadingElement={<PatientIdIcon className="h-4 w-4" />}
                 maxLength={11}
-                name="nationalId"
-                pattern="[0-9]{11}"
                 placeholder="01024018492"
                 required
                 trailingElement={
@@ -162,28 +193,31 @@ function PatientRegistrationPage() {
                 }
                 type="text"
                 inputMode="numeric"
+                {...register("personalId")}
               />
 
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <Input
                   autoComplete="tel-national"
+                  error={errors.phone?.message}
                   label="Mobile Number"
                   leadingElement={
                     <span className="text-label-md">+995 (GE)</span>
                   }
-                  name="mobileNumber"
                   placeholder="599 12 34 56"
                   required
                   type="tel"
+                  {...register("phone")}
                 />
                 <Input
                   autoComplete="email"
+                  error={errors.email?.message}
                   label="Email Address"
                   leadingElement={<span aria-hidden="true">@</span>}
-                  name="email"
                   placeholder="patient@clinicalmail.ge"
                   required
                   type="email"
+                  {...register("email")}
                 />
               </div>
             </FormInputsWrapper>
@@ -202,31 +236,36 @@ function PatientRegistrationPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
                   autoComplete="street-address"
+                  error={errors.address?.message}
                   label="Street Address, Apt / Floor"
-                  name="streetAddress"
                   placeholder="74 Chavchavadze Ave, Apt 12B"
                   required
+                  {...register("address")}
                 />
                 <div>
                   <label
                     className="mb-1.5 block text-label-md text-on-surface"
-                    htmlFor="cityDistrict"
+                    htmlFor="city"
                   >
                     City / District
                   </label>
                   <select
+                    aria-invalid={!!errors.city}
                     autoComplete="address-level2"
                     className="min-h-11 w-full rounded-lg bg-surface-lowest px-3 py-2 text-body-md text-on-surface shadow-elevation-1 outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-                    defaultValue="Tbilisi (Central)"
-                    id="cityDistrict"
-                    name="cityDistrict"
-                    required
+                    id="city"
+                    {...register("city")}
                   >
                     <option>Tbilisi (Central)</option>
                     <option>Tbilisi (North)</option>
                     <option>Tbilisi (South)</option>
                     <option>Other</option>
                   </select>
+                  {errors.city && (
+                    <p className="mt-1 text-body-sm text-error" role="alert">
+                      {errors.city.message}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -246,15 +285,17 @@ function PatientRegistrationPage() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Input
                     autoComplete="off"
+                    error={errors.emergencyContactName?.message}
                     label="Contact Full Name"
-                    name="emergencyContactName"
                     placeholder="e.g. David Chikovani"
+                    {...register("emergencyContactName")}
                   />
                   <Input
                     autoComplete="off"
+                    error={errors.emergencyContactPhone?.message}
                     label="Relationship & Phone"
-                    name="emergencyContactDetails"
                     placeholder="e.g. Brother, 599 12 34 56"
+                    {...register("emergencyContactPhone")}
                   />
                 </div>
               </div>
@@ -274,23 +315,21 @@ function PatientRegistrationPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
                   autoComplete="new-password"
+                  error={errors.password?.message}
                   label="Create Password"
                   leadingElement={<SecurityKeyIcon className="h-4 w-4" />}
-                  minLength={10}
-                  name="password"
-                  pattern="(?=.*[0-9])(?=.*[^A-Za-z0-9]).{10,}"
                   required
-                  title="Use at least 10 characters, including a number and a symbol."
                   type="password"
+                  {...register("password")}
                 />
                 <Input
                   autoComplete="new-password"
+                  error={errors.confirmPassword?.message}
                   label="Confirm Password"
                   leadingElement={<LockIcon className="h-4 w-4" />}
-                  minLength={10}
-                  name="confirmPassword"
                   required
                   type="password"
+                  {...register("confirmPassword")}
                 />
               </div>
               <p className="mt-2 text-body-sm text-on-surface-variant">
@@ -299,27 +338,34 @@ function PatientRegistrationPage() {
               </p>
 
               <div className="mt-5 space-y-3">
-                <label className="flex cursor-pointer items-start gap-2 text-body-sm text-on-surface-variant">
-                  <input
-                    className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
-                    name="healthRecordConsent"
-                    required
-                    type="checkbox"
-                  />
-                  <span>
-                    I consent to biological health record processing under{" "}
-                    <span className="text-primary">
-                      Georgian MoH Guidelines &amp; HIPAA Data Encryption
-                      Standards
+                <div>
+                  <label className="flex cursor-pointer items-start gap-2 text-body-sm text-on-surface-variant">
+                    <input
+                      aria-invalid={!!errors.healthRecordConsent}
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+                      type="checkbox"
+                      {...register("healthRecordConsent")}
+                    />
+                    <span>
+                      I consent to biological health record processing under{" "}
+                      <span className="text-primary">
+                        Georgian MoH Guidelines &amp; HIPAA Data Encryption
+                        Standards
+                      </span>
+                      .
                     </span>
-                    .
-                  </span>
-                </label>
+                  </label>
+                  {errors.healthRecordConsent && (
+                    <p className="mt-1 text-body-sm text-error" role="alert">
+                      {errors.healthRecordConsent.message}
+                    </p>
+                  )}
+                </div>
                 <label className="flex cursor-pointer items-start gap-2 text-body-sm text-on-surface-variant">
                   <input
                     className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
-                    name="appointmentReminders"
                     type="checkbox"
+                    {...register("appointmentReminders")}
                   />
                   <span>
                     Enable automated encrypted SMS and WhatsApp reminders for
@@ -330,7 +376,7 @@ function PatientRegistrationPage() {
             </FormInputsWrapper>
 
             <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
-              <Button className="px-5" type="submit">
+              <Button className="px-5" disabled={isSubmitting} type="submit">
                 <LockIcon aria-hidden="true" className="h-4 w-4" />
                 Complete Registration
               </Button>
@@ -346,10 +392,7 @@ function PatientRegistrationPage() {
               </p>
             </div>
             {submissionMessage && (
-              <p
-                className="text-body-sm text-error"
-                role="alert"
-              >
+              <p className="text-body-sm text-error" role="alert">
                 {submissionMessage}
               </p>
             )}
