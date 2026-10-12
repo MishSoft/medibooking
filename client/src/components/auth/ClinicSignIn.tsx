@@ -12,6 +12,8 @@ import {
   type ClinicSignInInput,
 } from "../../schemas/signIn.schema";
 import FieldError from "../../shared/ui/FieldError";
+import { useState } from "react";
+import { useLogin } from "../../hooks/useLogin";
 
 type ClinicSignInProps = {
   onRegisterClick: () => void;
@@ -21,6 +23,9 @@ const fieldBorder = (hasError: boolean) =>
   hasError ? "border-rose-400/60" : "border-white/5";
 
 function ClinicSignIn({ onRegisterClick }: ClinicSignInProps) {
+  const [loginError, setLoginError] = useState("");
+  const login = useLogin();
+
   const {
     register,
     handleSubmit,
@@ -29,9 +34,15 @@ function ClinicSignIn({ onRegisterClick }: ClinicSignInProps) {
     resolver: zodResolver(clinicSignInSchema),
   });
 
-  const onSubmit = (data: ClinicSignInInput) => {
-    // TODO: call login API
-    void data;
+  const onSubmit = async ({ identifier, password }: ClinicSignInInput) => {
+    setLoginError("");
+    try {
+      // facilityId is not accepted by the login endpoint yet
+      const response = await login.mutateAsync({ identifier, password });
+      console.log("Clinic admin logged in:", response);
+    } catch (error) {
+      setLoginError(error instanceof Error ? error.message : "Login failed.");
+    }
   };
 
   return (
@@ -154,6 +165,7 @@ function ClinicSignIn({ onRegisterClick }: ClinicSignInProps) {
             <ShieldCheckIcon aria-hidden="true" className="h-4 w-4" />
           </button>
         </div>
+        <FieldError id="clinic-login-error" message={loginError} />
       </form>
 
       <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-slate-300">

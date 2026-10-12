@@ -1,4 +1,6 @@
+import type { LoginInput } from "../schemas/auth.schema";
 import type { ClinicRegistrationFormOutput } from "../schemas/clinicRegistration.schema";
+import type { Role } from "../types/enums";
 import type { PatientRegistrationFormOutput } from "../schemas/patientRegistration.schema";
 import { apiRequest } from "./client";
 
@@ -47,7 +49,27 @@ export function toClinicRegisterPayload({
   return payload;
 }
 
+export type LoginPayload = LoginInput;
+
+export type AuthUser = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: Role;
+};
+
+export type LoginResponseData = {
+  user: AuthUser;
+  token: string;
+};
+
 export const authApi = {
+  login: (payload: LoginPayload) =>
+    apiRequest<ApiResponse<LoginResponseData>>("api/auth/login", {
+      method: "POST",
+      body: payload,
+    }),
   registerPatient: (payload: PatientRegisterPayload) =>
     apiRequest<ApiResponse>("api/auth/register/patient", {
       method: "POST",

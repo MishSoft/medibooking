@@ -11,20 +11,30 @@ import { useForm } from "react-hook-form";
 import { doctorSignInSchema } from "../../schemas/signIn.schema";
 import type { LoginInput } from "../../schemas/auth.schema";
 import FieldError from "../../shared/ui/FieldError";
+import { useState } from "react";
+import { useLogin } from "../../hooks/useLogin";
 
 const fieldBorder = (hasError: boolean) =>
   hasError ? "border-rose-400/60" : "border-white/5";
 
 function DoctorSignIn() {
+  const [loginError, setLoginError] = useState("");
+  const login = useLogin();
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<LoginInput>({ resolver: zodResolver(doctorSignInSchema) });
 
-  const onSubmit = (data: LoginInput) => {
-    // TODO: call login API
-    void data;
+  const onSubmit = async (data: LoginInput) => {
+    setLoginError("");
+    try {
+      const response = await login.mutateAsync(data);
+      console.log("Doctor logged in:", response);
+    } catch (error) {
+      setLoginError(error instanceof Error ? error.message : "Login failed.");
+    }
   };
 
   return (
@@ -135,6 +145,7 @@ function DoctorSignIn() {
             />
           </button>
         </div>
+        <FieldError id="doctor-login-error" message={loginError} />
       </form>
     </div>
   );
