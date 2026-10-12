@@ -21,9 +21,24 @@ import {
   type ClinicRegistrationFormInput,
   type ClinicRegistrationFormOutput,
 } from "../../schemas/clinicRegistration.schema";
+import { toClinicRegisterPayload } from "../../api/auth.api";
+import { useRegisterClinic } from "../../hooks/useRegisterClinic";
+
+// TODO: replace with departments from the API once an endpoint exists
+const departmentOptions = [
+  "Cardiology",
+  "Dermatology",
+  "Neurology",
+  "Pediatrics",
+  "Orthopedics",
+  "Gynecology",
+  "Ophthalmology",
+  "General Practice",
+];
 
 function ClinicRegistrationPage() {
   const [submissionMessage, setSubmissionMessage] = useState("");
+  const registerClinic = useRegisterClinic();
 
   const {
     register,
@@ -37,17 +52,24 @@ function ClinicRegistrationPage() {
     resolver: zodResolver(clinicRegistrationFormSchema),
     defaultValues: {
       city: "Tbilisi (Metropolitan Area)",
+      departments: [],
       legalCertification: false,
       serviceTerms: false,
     },
   });
 
-  const onSubmit = (data: ClinicRegistrationFormOutput) => {
-    // TODO: call clinic registration API
-    void data;
-    setSubmissionMessage(
-      "Clinic registration is not connected to a submission service yet.",
-    );
+  const onSubmit = async (data: ClinicRegistrationFormOutput) => {
+    setSubmissionMessage("");
+    try {
+      const response = await registerClinic.mutateAsync(
+        toClinicRegisterPayload(data),
+      );
+      console.log("Clinic registered:", response);
+    } catch (error) {
+      setSubmissionMessage(
+        error instanceof Error ? error.message : "Clinic registration failed.",
+      );
+    }
   };
 
   return (
@@ -120,6 +142,36 @@ function ClinicRegistrationPage() {
                   {...register("taxId")}
                 />
               </div>
+
+              <fieldset className="mt-4">
+                <legend className="mb-1.5 text-label-md text-on-surface">
+                  Clinical Departments
+                  <span aria-hidden="true" className="ml-1 text-secondary">
+                    *
+                  </span>
+                </legend>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {departmentOptions.map((department) => (
+                    <label
+                      className="flex cursor-pointer items-center gap-2 rounded-lg bg-surface-lowest px-3 py-2 text-body-sm text-on-surface-variant shadow-elevation-1 has-checked:text-secondary"
+                      key={department}
+                    >
+                      <input
+                        className="h-4 w-4 shrink-0 accent-secondary"
+                        type="checkbox"
+                        value={department}
+                        {...register("departments")}
+                      />
+                      {department}
+                    </label>
+                  ))}
+                </div>
+                {errors.departments && (
+                  <p className="mt-1 text-body-sm text-error" role="alert">
+                    {errors.departments.message}
+                  </p>
+                )}
+              </fieldset>
             </FormInputsWrapper>
 
             <FormInputsWrapper
@@ -134,6 +186,22 @@ function ClinicRegistrationPage() {
               }
             >
               <div className="grid gap-4 sm:grid-cols-2">
+                <Input
+                  autoComplete="given-name"
+                  error={errors.firstName?.message}
+                  label="Admin First Name"
+                  placeholder="e.g. Davit"
+                  required
+                  {...register("firstName")}
+                />
+                <Input
+                  autoComplete="family-name"
+                  error={errors.lastName?.message}
+                  label="Admin Last Name"
+                  placeholder="e.g. Maisuradze"
+                  required
+                  {...register("lastName")}
+                />
                 <Input
                   autoComplete="email"
                   error={errors.email?.message}

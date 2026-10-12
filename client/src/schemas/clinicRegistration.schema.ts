@@ -6,8 +6,7 @@ const mustBeChecked = (message: string) =>
   z.boolean().refine((value) => value, message);
 
 export const clinicRegistrationFormSchema = clinicRegisterSchema
-  // Not collected by this form yet
-  .omit({ role: true, firstName: true, lastName: true, departments: true })
+  .omit({ role: true })
   .extend({
     address: z.string().min(1, "Street address is required"),
     city: z.string().min(1, "City / region is required"),

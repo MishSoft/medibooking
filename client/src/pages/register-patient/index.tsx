@@ -21,6 +21,8 @@ import {
   type PatientRegistrationFormInput,
   type PatientRegistrationFormOutput,
 } from "../../schemas/patientRegistration.schema";
+import { toPatientRegisterPayload } from "../../api/auth.api";
+import { useRegisterPatient } from "../../hooks/useRegisterPatient";
 
 const genderOptions = [
   { label: "Female", value: Gender.FEMALE },
@@ -31,6 +33,7 @@ const genderOptions = [
 
 function PatientRegistrationPage() {
   const [submissionMessage, setSubmissionMessage] = useState("");
+  const registerPatient = useRegisterPatient();
 
   const {
     register,
@@ -50,12 +53,18 @@ function PatientRegistrationPage() {
     },
   });
 
-  const onSubmit = (data: PatientRegistrationFormOutput) => {
-    // TODO: call patient registration API
-    void data;
-    setSubmissionMessage(
-      "Registration is not connected to a submission service yet.",
-    );
+  const onSubmit = async (data: PatientRegistrationFormOutput) => {
+    setSubmissionMessage("");
+    try {
+      const response = await registerPatient.mutateAsync(
+        toPatientRegisterPayload(data),
+      );
+      console.log("Patient registered:", response);
+    } catch (error) {
+      setSubmissionMessage(
+        error instanceof Error ? error.message : "Registration failed.",
+      );
+    }
   };
 
   return (

@@ -10,6 +10,8 @@ import { useForm } from "react-hook-form";
 import { patientSignInSchema } from "../../schemas/signIn.schema";
 import type { LoginInput } from "../../schemas/auth.schema";
 import FieldError from "../../shared/ui/FieldError";
+import { useState } from "react";
+import { useLogin } from "../../hooks/useLogin";
 
 type PatientSignInProps = {
   onRegisterClick: () => void;
@@ -19,15 +21,23 @@ const fieldBorder = (hasError: boolean) =>
   hasError ? "border-rose-400/60" : "border-white/5";
 
 function PatientSignIn({ onRegisterClick }: PatientSignInProps) {
+  const [loginError, setLoginError] = useState("");
+  const login = useLogin();
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<LoginInput>({ resolver: zodResolver(patientSignInSchema) });
 
-  const onSubmit = (data: LoginInput) => {
-    // TODO: call login API
-    void data;
+  const onSubmit = async (data: LoginInput) => {
+    setLoginError("");
+    try {
+      const response = await login.mutateAsync(data);
+      console.log("Patient logged in:", response);
+    } catch (error) {
+      setLoginError(error instanceof Error ? error.message : "Login failed.");
+    }
   };
 
   return (
@@ -126,6 +136,7 @@ function PatientSignIn({ onRegisterClick }: PatientSignInProps) {
           Sign In to Patient Portal
           <ArrowRightIcon aria-hidden="true" className="h-4 w-4" />
         </button>
+        <FieldError id="patient-login-error" message={loginError} />
       </form>
 
       <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-slate-300">
