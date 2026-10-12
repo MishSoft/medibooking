@@ -1,3 +1,4 @@
+import type { ClinicRegistrationFormOutput } from "../schemas/clinicRegistration.schema";
 import type { PatientRegistrationFormOutput } from "../schemas/patientRegistration.schema";
 import { apiRequest } from "./client";
 
@@ -27,9 +28,33 @@ export function toPatientRegisterPayload({
   return payload;
 }
 
+type ClinicFormOnlyFields =
+  | "confirmPassword"
+  | "legalCertification"
+  | "serviceTerms";
+
+export type ClinicRegisterPayload = Omit<
+  ClinicRegistrationFormOutput,
+  ClinicFormOnlyFields
+>;
+
+export function toClinicRegisterPayload({
+  confirmPassword: _confirmPassword,
+  legalCertification: _legalCertification,
+  serviceTerms: _serviceTerms,
+  ...payload
+}: ClinicRegistrationFormOutput): ClinicRegisterPayload {
+  return payload;
+}
+
 export const authApi = {
   registerPatient: (payload: PatientRegisterPayload) =>
     apiRequest<ApiResponse>("api/auth/register/patient", {
+      method: "POST",
+      body: payload,
+    }),
+  registerClinic: (payload: ClinicRegisterPayload) =>
+    apiRequest<ApiResponse>("api/auth/register/clinic", {
       method: "POST",
       body: payload,
     }),
