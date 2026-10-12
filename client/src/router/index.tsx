@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router';
 import App from '../App';
+import PathSelectorPage from '../pages/path-selector';
 import { queryClient, postsQueryOptions } from './queryClient';
 
 export const router = createBrowserRouter([
@@ -9,5 +10,9 @@ export const router = createBrowserRouter([
     loader: async () => {
       return await queryClient.ensureQueryData(postsQueryOptions());
     },
+  },
+  {
+    path: '/path-selector',
+    element: <PathSelectorPage />,
   },
 ]);
