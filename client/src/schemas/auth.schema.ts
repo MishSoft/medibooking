@@ -1,20 +1,20 @@
-// Mirrors server/src/schemas/auth.schema.ts — keep in sync
+// Mirrors server/src/schemas/auth.schema.ts — keep in sync (messages translated to English)
 import { z } from "zod";
 import { Gender, Role } from "../types/enums";
 
 export const baseUserSchema = z.object({
-  email: z.string().email("არასწორი ელ.ფოსტის ფორმატი"),
-  password: z.string().min(6, "პაროლი უნდა იყოს მინიმუმ 6 სიმბოლო"),
-  firstName: z.string().min(2, "სახელი სავალდებულოა (მინ. 2 სიმბოლო)"),
-  lastName: z.string().min(2, "გვარი სავალდებულოა (მინ. 2 სიმბოლო)"),
-  phone: z.string().min(6, "ტელეფონის ნომერი სავალდებულოა"),
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  firstName: z.string().min(2, "First name is required (min. 2 characters)"),
+  lastName: z.string().min(2, "Last name is required (min. 2 characters)"),
+  phone: z.string().min(6, "Phone number is required"),
 });
 
 export const patientRegisterSchema = baseUserSchema.extend({
   role: z.literal(Role.PATIENT).default(Role.PATIENT),
   personalId: z.string().optional(),
-  address: z.string().min(1, "მისამართი სავალდებულოა"),
-  city: z.string().min(1, "ქალაქი სავალდებულოა"),
+  address: z.string().min(1, "Address is required"),
+  city: z.string().min(1, "City is required"),
   gender: z.nativeEnum(Gender).default(Gender.MALE),
   birthDate: z.coerce.date().optional(),
   emergencyContactName: z.string().optional(),
@@ -23,12 +23,12 @@ export const patientRegisterSchema = baseUserSchema.extend({
 
 export const clinicRegisterSchema = baseUserSchema.extend({
   role: z.literal(Role.CLINIC_ADMIN).default(Role.CLINIC_ADMIN),
-  name: z.string().min(2, "კლინიკის სახელი სავალდებულოა"),
-  legalName: z.string().min(2, "იურიდიული სახელი სავალდებულოა"),
-  taxId: z.string().min(1, "საიდენტიფიკაციო კოდი სავალდებულოა"),
-  publicEmail: z.string().email("არასწორი ელ.ფოსტის ფორმატი"),
-  receptionPhone: z.string().min(1, "მისაღების ნომერი სავალდებულოა"),
-  departments: z.array(z.string()).min(1, "აირჩიეთ მინიმუმ ერთი დეპარტამენტი"),
+  name: z.string().min(2, "Clinic name is required"),
+  legalName: z.string().min(2, "Legal name is required"),
+  taxId: z.string().min(1, "Tax ID is required"),
+  publicEmail: z.string().email("Invalid email format"),
+  receptionPhone: z.string().min(1, "Reception phone number is required"),
+  departments: z.array(z.string()).min(1, "Select at least one department"),
   address: z.string().optional(),
   postalCode: z.string().optional(),
   city: z.string().optional(),
@@ -36,21 +36,21 @@ export const clinicRegisterSchema = baseUserSchema.extend({
 
 export const doctorRegisterSchema = baseUserSchema.extend({
   role: z.literal(Role.DOCTOR).default(Role.DOCTOR),
-  personalId: z.string().min(1, "პირადი ნომერი სავალდებულოა"),
-  licenseNo: z.string().min(1, "ლიცენზიის ნომერი სავალდებულოა"),
-  primarySpecialty: z.string().min(1, "ძირითადი სპეციალობა სავალდებულოა"),
-  yearsOfPractice: z.number().min(0, "გამოცდილება არ უნდა იყოს უარყოფითი"),
-  emergencyPhone: z.string().min(1, "გადაუდებელი ნომერი სავალდებულოა"),
-  city: z.string().min(1, "ქალაქი სავალდებულოა"),
-  clinicId: z.string().uuid("არასწორი კლინიკის ID"),
+  personalId: z.string().min(1, "Personal ID is required"),
+  licenseNo: z.string().min(1, "License number is required"),
+  primarySpecialty: z.string().min(1, "Primary specialty is required"),
+  yearsOfPractice: z.number().min(0, "Years of practice cannot be negative"),
+  emergencyPhone: z.string().min(1, "Emergency phone number is required"),
+  city: z.string().min(1, "City is required"),
+  clinicId: z.string().uuid("Invalid clinic ID"),
   gender: z.nativeEnum(Gender).optional(),
   birthDate: z.coerce.date().optional(),
   bio: z.string().optional(),
 });
 
 export const loginSchema = z.object({
-  identifier: z.string().min(1, "შეიყვანეთ ელ.ფოსტა ან ლიცენზიის ნომერი"),
-  password: z.string().min(1, "პაროლი სავალდებულოა"),
+  identifier: z.string().min(1, "Enter your email or license number"),
+  password: z.string().min(1, "Password is required"),
 });
 
 export type PatientRegisterInput = z.infer<typeof patientRegisterSchema>;
