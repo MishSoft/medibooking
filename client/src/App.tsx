@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { postsQueryOptions } from "./router/queryClient";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
 
 function App() {
   const { data: posts } = useQuery(postsQueryOptions());
@@ -8,6 +10,8 @@ function App() {
 
   return (
     <main>
+      <Header />
+
       <h1 className="text-3xl text-center font-bold underline">Hello world!</h1>
 
       <section className="font-inter bg-surface-dim text-on-surface p-8 mt-6 space-y-6">
@@ -56,6 +60,8 @@ function App() {
           MRN: #9928-AX-00219 // HL7_V2_ACK
         </p>
       </section>
+
+      <Footer />
     </main>
   );
 }
