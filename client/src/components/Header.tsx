@@ -1,4 +1,8 @@
-function Header() {
+type HeaderProps = {
+  role?: string;
+};
+
+function Header({ role = "Patient" }: HeaderProps) {
   return (
     <header
       aria-label="MediBooking"
@@ -11,7 +15,7 @@ function Header() {
       <div className="flex items-center gap-2">
         <span className="inline-flex items-center gap-1.5 rounded-md border border-surface-container-high bg-surface-container-low px-2 py-1 text-label-md text-on-surface">
           <span className="text-primary">ROLE</span>
-          Patient
+          {role}
         </span>
         <span className="rounded-md border border-surface-container-high bg-surface-container-low px-2 py-1 text-label-md text-on-surface-variant">
           EN

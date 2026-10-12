@@ -15,6 +15,7 @@ function Input({
   labelAdornment,
   className = "",
   id,
+  required = false,
   ...inputProps
 }: InputProps) {
   const generatedId = useId();
@@ -28,6 +29,11 @@ function Input({
           htmlFor={inputId}
         >
           {label}
+          {required && (
+            <span aria-hidden="true" className="ml-1 text-secondary">
+              *
+            </span>
+          )}
         </label>
         {labelAdornment}
       </div>
@@ -44,6 +50,7 @@ function Input({
         <input
           className="min-w-0 flex-1 bg-transparent text-body-md text-on-surface outline-none placeholder:text-on-surface-variant disabled:cursor-not-allowed disabled:opacity-60"
           id={inputId}
+          required={required}
           {...inputProps}
         />
         {trailingElement}

@@ -1,9 +1,10 @@
 import {
+  ArrowRightIcon,
   CheckmarkIcon,
   ClinicBuildingIcon,
-  ClinicCalendarIcon,
   ClinicNetworkIcon,
 } from "../../assets/icons/Icons";
+import { Link } from "react-router";
 
 type ClinicRegistrationProps = {
   onSignInClick: () => void;
@@ -58,16 +59,13 @@ function ClinicRegistration({ onSignInClick }: ClinicRegistrationProps) {
         </li>
       </ul>
       <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
-        <button
-          className="cursor-pointer inline-flex items-center gap-3 rounded-xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 shadow-[0_8px_28px_rgba(34,211,238,0.2)] transition-colors hover:bg-cyan-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200"
-          type="button"
+        <Link
+          className="inline-flex items-center gap-3 rounded-xl bg-secondary-container px-5 py-3 text-sm font-semibold text-on-secondary shadow-elevation-1 transition-colors hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+          to="/register-clinic"
         >
           Apply for Clinic Tenancy
-          <ClinicCalendarIcon
-            aria-hidden="true"
-            className="h-4 w-4"
-          />
-        </button>
+          <ArrowRightIcon aria-hidden="true" className="h-4 w-4" />
+        </Link>
         <button
           className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-cyan-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-200"
           onClick={onSignInClick}

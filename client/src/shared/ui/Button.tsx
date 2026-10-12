@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes } from "react";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "accent";
 };
 
 function Button({
@@ -14,7 +14,9 @@ function Button({
   const variantClasses =
     variant === "primary"
       ? "bg-primary-container text-on-primary-container shadow-elevation-1 hover:bg-primary"
-      : "bg-surface-container-high text-on-surface hover:bg-surface-highest";
+      : variant === "accent"
+        ? "bg-secondary-container text-on-secondary shadow-elevation-1 hover:bg-secondary"
+        : "bg-surface-container-high text-on-surface hover:bg-surface-highest";
 
   return (
     <button
