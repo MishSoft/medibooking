@@ -29,6 +29,7 @@ export const clinicRegisterSchema = baseUserSchema.extend({
   receptionPhone: z.string().min(1, "მისაღების ნომერი სავალდებულოა"),
   departments: z.array(z.string()).min(1, "აირჩიეთ მინიმუმ ერთი დეპარტამენტი"),
   address: z.string().optional(),
+  postalCode: z.string().optional(),
   city: z.string().optional(),
 });
 

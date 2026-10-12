@@ -81,6 +81,7 @@ model Clinic {
   phone          String
   address        String?
   publicEmail    String
+  postalCode     String?
   receptionPhone String
   adminId        String          @unique
   admin          User            @relation(fields: [adminId], references: [id])
