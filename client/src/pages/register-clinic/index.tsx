@@ -1,5 +1,7 @@
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import {
   ClinicBuildingIcon,
   ClinicNetworkIcon,
@@ -14,25 +16,61 @@ import Footer from "../../components/Footer";
 import Header from "../../components/Header";
 import Button from "../../shared/ui/Button";
 import Input from "../../shared/ui/Input";
+import {
+  clinicRegistrationFormSchema,
+  type ClinicRegistrationFormInput,
+  type ClinicRegistrationFormOutput,
+} from "../../schemas/clinicRegistration.schema";
+import { toClinicRegisterPayload } from "../../api/auth.api";
+import { useRegisterClinic } from "../../hooks/useRegisterClinic";
+
+// TODO: replace with departments from the API once an endpoint exists
+const departmentOptions = [
+  "Cardiology",
+  "Dermatology",
+  "Neurology",
+  "Pediatrics",
+  "Orthopedics",
+  "Gynecology",
+  "Ophthalmology",
+  "General Practice",
+];
 
 function ClinicRegistrationPage() {
   const [submissionMessage, setSubmissionMessage] = useState("");
+  const registerClinic = useRegisterClinic();
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<
+    ClinicRegistrationFormInput,
+    unknown,
+    ClinicRegistrationFormOutput
+  >({
+    resolver: zodResolver(clinicRegistrationFormSchema),
+    defaultValues: {
+      city: "Tbilisi (Metropolitan Area)",
+      departments: [],
+      legalCertification: false,
+      serviceTerms: false,
+    },
+  });
 
-    const formData = new FormData(event.currentTarget);
-    if (formData.get("adminPassword") !== formData.get("confirmPassword")) {
-      setSubmissionMessage(
-        "Passwords do not match. Please check both password fields.",
+  const onSubmit = async (data: ClinicRegistrationFormOutput) => {
+    setSubmissionMessage("");
+    try {
+      const response = await registerClinic.mutateAsync(
+        toClinicRegisterPayload(data),
       );
-      return;
+      console.log("Clinic registered:", response);
+    } catch (error) {
+      setSubmissionMessage(
+        error instanceof Error ? error.message : "Clinic registration failed.",
+      );
     }
-
-    setSubmissionMessage(
-      "Clinic registration is not connected to a submission service yet.",
-    );
-  }
+  };
 
   return (
     <div className="min-h-screen bg-surface-dim font-inter text-on-surface">
@@ -55,7 +93,11 @@ function ClinicRegistrationPage() {
             </p>
           </div>
 
-          <form className="space-y-5" onSubmit={handleSubmit}>
+          <form
+            className="space-y-5"
+            noValidate
+            onSubmit={handleSubmit(onSubmit)}
+          >
             <FormInputsWrapper
               formInputsSectionNumber={1}
               formInputsSectionTitle="Clinic Identity & Legal Entity"
@@ -69,6 +111,7 @@ function ClinicRegistrationPage() {
             >
               <div className="space-y-4">
                 <Input
+                  error={errors.name?.message}
                   label="Clinic Name (Public Trade Designation)"
                   labelAdornment={
                     <span className="text-body-sm text-on-surface-variant">
@@ -78,25 +121,57 @@ function ClinicRegistrationPage() {
                   leadingElement={
                     <ClinicBuildingIcon className="h-4 w-4" />
                   }
-                  name="clinicName"
                   placeholder="e.g. Tbilisi Central Clinic (Main Campus)"
                   required
+                  {...register("name")}
                 />
                 <Input
+                  error={errors.legalName?.message}
                   label="Clinic Legal / Corporate Name"
                   leadingElement={<LicenseCardIcon className="h-4 w-4" />}
-                  name="legalName"
                   placeholder="e.g. Tbilisi Healthcare Partners LLC"
                   required
+                  {...register("legalName")}
                 />
                 <Input
+                  error={errors.taxId?.message}
                   label="Tax / MoH Identification Code"
                   leadingElement={<LicenseCardIcon className="h-4 w-4" />}
-                  name="identificationCode"
                   placeholder="e.g. 404889211-MOH"
                   required
+                  {...register("taxId")}
                 />
               </div>
+
+              <fieldset className="mt-4">
+                <legend className="mb-1.5 text-label-md text-on-surface">
+                  Clinical Departments
+                  <span aria-hidden="true" className="ml-1 text-secondary">
+                    *
+                  </span>
+                </legend>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {departmentOptions.map((department) => (
+                    <label
+                      className="flex cursor-pointer items-center gap-2 rounded-lg bg-surface-lowest px-3 py-2 text-body-sm text-on-surface-variant shadow-elevation-1 has-checked:text-secondary"
+                      key={department}
+                    >
+                      <input
+                        className="h-4 w-4 shrink-0 accent-secondary"
+                        type="checkbox"
+                        value={department}
+                        {...register("departments")}
+                      />
+                      {department}
+                    </label>
+                  ))}
+                </div>
+                {errors.departments && (
+                  <p className="mt-1 text-body-sm text-error" role="alert">
+                    {errors.departments.message}
+                  </p>
+                )}
+              </fieldset>
             </FormInputsWrapper>
 
             <FormInputsWrapper
@@ -112,40 +187,60 @@ function ClinicRegistrationPage() {
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
+                  autoComplete="given-name"
+                  error={errors.firstName?.message}
+                  label="Admin First Name"
+                  placeholder="e.g. Davit"
+                  required
+                  {...register("firstName")}
+                />
+                <Input
+                  autoComplete="family-name"
+                  error={errors.lastName?.message}
+                  label="Admin Last Name"
+                  placeholder="e.g. Maisuradze"
+                  required
+                  {...register("lastName")}
+                />
+                <Input
                   autoComplete="email"
+                  error={errors.email?.message}
                   label="Admin Root Email"
                   leadingElement={<EmailIcon className="h-4 w-4" />}
-                  name="adminEmail"
                   placeholder="admin.ops@tbilisiclinic.ge"
                   required
                   type="email"
+                  {...register("email")}
                 />
                 <Input
                   autoComplete="tel"
+                  error={errors.phone?.message}
                   label="Admin Mobile Phone"
                   leadingElement={
                     <span className="text-label-md">+995 (GE)</span>
                   }
-                  name="adminMobile"
                   placeholder="599 11 22 33"
                   required
                   type="tel"
+                  {...register("phone")}
                 />
                 <Input
                   autoComplete="new-password"
+                  error={errors.password?.message}
                   label="Administrative Password"
                   leadingElement={<LockIcon className="h-4 w-4" />}
-                  name="adminPassword"
                   required
                   type="password"
+                  {...register("password")}
                 />
                 <Input
                   autoComplete="new-password"
+                  error={errors.confirmPassword?.message}
                   label="Confirm Administrative Password"
                   leadingElement={<SecurityKeyIcon className="h-4 w-4" />}
-                  name="confirmPassword"
                   required
                   type="password"
+                  {...register("confirmPassword")}
                 />
               </div>
             </FormInputsWrapper>
@@ -164,39 +259,42 @@ function ClinicRegistrationPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
                   autoComplete="email"
+                  error={errors.publicEmail?.message}
                   label="Public Inquiries Email"
                   leadingElement={<EmailIcon className="h-4 w-4" />}
-                  name="publicEmail"
                   placeholder="info@tbilisiclinic.ge"
                   required
                   type="email"
+                  {...register("publicEmail")}
                 />
                 <Input
                   autoComplete="tel"
+                  error={errors.receptionPhone?.message}
                   label="Direct Reception / Hotline"
                   leadingElement={<span aria-hidden="true">☎</span>}
-                  name="hotline"
                   placeholder="+995 (32) 2 123 456"
                   required
                   type="tel"
+                  {...register("receptionPhone")}
                 />
               </div>
 
               <Input
                 autoComplete="street-address"
                 className="mt-4"
+                error={errors.address?.message}
                 label="Street Address, Building / Wing / Floor"
                 leadingElement={<InfoCircleIcon className="h-4 w-4" />}
-                name="streetAddress"
                 placeholder="e.g. 74 Chavchavadze Ave, Building B, Entrance 3"
                 required
+                {...register("address")}
               />
 
               <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(8rem,1fr)]">
                 <div>
                   <label
                     className="mb-1.5 block text-label-md text-on-surface"
-                    htmlFor="region"
+                    htmlFor="city"
                   >
                     City / Autonomous Region
                     <span aria-hidden="true" className="ml-1 text-secondary">
@@ -204,12 +302,11 @@ function ClinicRegistrationPage() {
                     </span>
                   </label>
                   <select
+                    aria-invalid={!!errors.city}
                     autoComplete="address-level2"
                     className="min-h-11 w-full rounded-lg bg-surface-lowest px-3 py-2 text-body-md text-on-surface shadow-elevation-1 outline-none focus-visible:ring-2 focus-visible:ring-secondary/50"
-                    defaultValue="Tbilisi (Metropolitan Area)"
-                    id="region"
-                    name="region"
-                    required
+                    id="city"
+                    {...register("city")}
                   >
                     <option>Tbilisi (Metropolitan Area)</option>
                     <option>Adjara</option>
@@ -217,52 +314,73 @@ function ClinicRegistrationPage() {
                     <option>Kakheti</option>
                     <option>Other</option>
                   </select>
+                  {errors.city && (
+                    <p className="mt-1 text-body-sm text-error" role="alert">
+                      {errors.city.message}
+                    </p>
+                  )}
                 </div>
                 <Input
                   autoComplete="postal-code"
+                  error={errors.postalCode?.message}
                   label="Postal Code"
-                  name="postalCode"
                   placeholder="0162"
                   required
+                  {...register("postalCode")}
                 />
               </div>
             </FormInputsWrapper>
 
             <section className="space-y-3 rounded-xl bg-surface-container p-4 shadow-elevation-1 sm:p-5">
-              <label className="flex cursor-pointer items-start gap-2 text-body-sm text-on-surface-variant">
-                <input
-                  className="mt-0.5 h-4 w-4 shrink-0 accent-secondary"
-                  name="legalCertification"
-                  required
-                  type="checkbox"
-                />
-                <span>
-                  I certify under legal penalty that this healthcare facility
-                  holds an active, unencumbered Georgian Ministry of Healthcare
-                  (MoH) license, clinical operating permits, and registered
-                  liability protocols.
-                </span>
-              </label>
-              <label className="flex cursor-pointer items-start gap-2 text-body-sm text-on-surface-variant">
-                <input
-                  className="mt-0.5 h-4 w-4 shrink-0 accent-secondary"
-                  name="serviceTerms"
-                  required
-                  type="checkbox"
-                />
-                <span>
-                  We accept the{" "}
-                  <span className="text-secondary">
-                    Enterprise Healthcare B2B Terms of Service
+              <div>
+                <label className="flex cursor-pointer items-start gap-2 text-body-sm text-on-surface-variant">
+                  <input
+                    aria-invalid={!!errors.legalCertification}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-secondary"
+                    type="checkbox"
+                    {...register("legalCertification")}
+                  />
+                  <span>
+                    I certify under legal penalty that this healthcare facility
+                    holds an active, unencumbered Georgian Ministry of
+                    Healthcare (MoH) license, clinical operating permits, and
+                    registered liability protocols.
                   </span>
-                  , HL7/FHIR Integration Pipeline standards, and end-to-end
-                  encrypted Telehealth Data Management rules.
-                </span>
-              </label>
+                </label>
+                {errors.legalCertification && (
+                  <p className="mt-1 text-body-sm text-error" role="alert">
+                    {errors.legalCertification.message}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="flex cursor-pointer items-start gap-2 text-body-sm text-on-surface-variant">
+                  <input
+                    aria-invalid={!!errors.serviceTerms}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-secondary"
+                    type="checkbox"
+                    {...register("serviceTerms")}
+                  />
+                  <span>
+                    We accept the{" "}
+                    <span className="text-secondary">
+                      Enterprise Healthcare B2B Terms of Service
+                    </span>
+                    , HL7/FHIR Integration Pipeline standards, and end-to-end
+                    encrypted Telehealth Data Management rules.
+                  </span>
+                </label>
+                {errors.serviceTerms && (
+                  <p className="mt-1 text-body-sm text-error" role="alert">
+                    {errors.serviceTerms.message}
+                  </p>
+                )}
+              </div>
             </section>
 
             <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
               <Button
+                disabled={isSubmitting}
                 variant="accent"
                 type="submit"
               >
