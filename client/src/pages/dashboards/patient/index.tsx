@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router";
 import {
   ClockHistoryIcon,
@@ -13,8 +13,8 @@ import BookingModal from "../../../components/booking/BookingModal";
 import AppointmentHistorySection from "../../../components/patient/AppointmentHistorySection";
 import FindDoctorSection from "../../../components/patient/FindDoctorSection";
 import MyAppointmentsSection from "../../../components/patient/MyAppointmentsSection";
+import PrescriptionsSection from "../../../components/patient/PrescriptionsSection";
 import type { Doctor } from "../../../types/doctor";
-import EmptyState from "../../../shared/ui/EmptyState";
 import Panel from "../../../shared/ui/Panel";
 
 type PatientTabId = "doctors" | "appointments" | "history" | "prescriptions";
@@ -35,6 +35,17 @@ function PatientDashboardPage() {
   const tabParam = searchParams.get("tab");
   const activeTab: PatientTabId = isPatientTab(tabParam) ? tabParam : "doctors";
   const activeTabMeta = patientTabs.find((tab) => tab.id === activeTab)!;
+
+  const sections: Record<PatientTabId, ReactNode> = {
+    doctors: <FindDoctorSection onBook={setBookingDoctor} />,
+    appointments: (
+      <MyAppointmentsSection
+        onFindDoctor={() => setSearchParams({ tab: "doctors" })}
+      />
+    ),
+    history: <AppointmentHistorySection />,
+    prescriptions: <PrescriptionsSection />,
+  };
 
   return (
     <div className="space-y-6">
@@ -62,21 +73,7 @@ function PatientDashboardPage() {
         role="tabpanel"
         title={activeTabMeta.label}
       >
-        {activeTab === "doctors" ? (
-          <FindDoctorSection onBook={setBookingDoctor} />
-        ) : activeTab === "appointments" ? (
-          <MyAppointmentsSection
-            onFindDoctor={() => setSearchParams({ tab: "doctors" })}
-          />
-        ) : activeTab === "history" ? (
-          <AppointmentHistorySection />
-        ) : (
-          <EmptyState
-            description="This section is coming soon."
-            icon={activeTabMeta.icon}
-            title={activeTabMeta.label}
-          />
-        )}
+        {sections[activeTab]}
       </Panel>
 
       <BookingModal
