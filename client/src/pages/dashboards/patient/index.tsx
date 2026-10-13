@@ -8,6 +8,7 @@ import {
 import DashboardTabs, {
   type DashboardTab,
 } from "../../../components/dashboard/DashboardTabs";
+import FindDoctorSection from "../../../components/patient/FindDoctorSection";
 import EmptyState from "../../../shared/ui/EmptyState";
 import Panel from "../../../shared/ui/Panel";
 
@@ -32,7 +33,7 @@ function PatientDashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-label-md tracking-[0.1em] text-primary">
+        <p className="text-label-md tracking-widest text-primary">
           PATIENT PORTAL
         </p>
         <h1 className="mt-1 text-headline-xl">Your Health Dashboard</h1>
@@ -55,12 +56,16 @@ function PatientDashboardPage() {
         role="tabpanel"
         title={activeTabMeta.label}
       >
-        {/* Section content is added in the following parts */}
-        <EmptyState
-          description="This section is coming soon."
-          icon={activeTabMeta.icon}
-          title={activeTabMeta.label}
-        />
+        {activeTab === "doctors" ? (
+          // onBook is wired to the booking flow in the next part
+          <FindDoctorSection />
+        ) : (
+          <EmptyState
+            description="This section is coming soon."
+            icon={activeTabMeta.icon}
+            title={activeTabMeta.label}
+          />
+        )}
       </Panel>
     </div>
   );
