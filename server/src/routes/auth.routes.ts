@@ -5,6 +5,7 @@ import {
   registerDoctorController,
   loginController,
   getMeController,
+  logoutController,
 } from "../controllers/auth.controllers";
 import { validate } from "../middleware/validation.middleware";
 import {
@@ -37,6 +38,7 @@ router.post(
 
 router.post("/login", validate(loginSchema), loginController);
 router.get("/me", authenticate, getMeController);
+router.post('/logout', authenticate, logoutController)
 
 export default router;
 

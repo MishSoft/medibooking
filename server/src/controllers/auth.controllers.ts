@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { ZodError } from "zod";
+import { success, ZodError } from "zod";
 import {
   ClinicRegisterInput,
   clinicRegisterSchema,
@@ -163,3 +163,18 @@ export const getMeController = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+export const logoutController = async (re: Request, res: Response) => {
+  try {
+    return res.status(200).json({
+      success: true,
+      message: "Successfully loged out."
+    })
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: "Logout Error"
+    })
+  }
+}

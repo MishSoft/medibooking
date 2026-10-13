@@ -145,6 +145,25 @@ const options: swaggerJsdoc.Options = {
           },
         },
       },
+      "/api/auth/logout": {
+        post: {
+          summary: "მომხმარებლის სისტემიდან გამოსვლა",
+          tags: ["Auth"],
+          security: [
+            {
+              BearerAuth: [],
+            },
+          ],
+          responses: {
+            200: {
+              description: "წარმატებით გამოვიდა სისტემიდან",
+            },
+            401: {
+              description: "არაავტორიზებული (ტოკენი აკლია ან ვადა გაუვიდა)",
+            },
+          },
+        },
+      },
     },
   },
   apis: [],
