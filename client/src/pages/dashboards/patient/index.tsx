@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useSearchParams } from "react-router";
 import {
   ClockHistoryIcon,
@@ -8,7 +9,9 @@ import {
 import DashboardTabs, {
   type DashboardTab,
 } from "../../../components/dashboard/DashboardTabs";
+import BookingModal from "../../../components/booking/BookingModal";
 import FindDoctorSection from "../../../components/patient/FindDoctorSection";
+import type { Doctor } from "../../../types/doctor";
 import EmptyState from "../../../shared/ui/EmptyState";
 import Panel from "../../../shared/ui/Panel";
 
@@ -26,6 +29,7 @@ const isPatientTab = (value: string | null): value is PatientTabId =>
 
 function PatientDashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [bookingDoctor, setBookingDoctor] = useState<Doctor | null>(null);
   const tabParam = searchParams.get("tab");
   const activeTab: PatientTabId = isPatientTab(tabParam) ? tabParam : "doctors";
   const activeTabMeta = patientTabs.find((tab) => tab.id === activeTab)!;
@@ -57,8 +61,7 @@ function PatientDashboardPage() {
         title={activeTabMeta.label}
       >
         {activeTab === "doctors" ? (
-          // onBook is wired to the booking flow in the next part
-          <FindDoctorSection />
+          <FindDoctorSection onBook={setBookingDoctor} />
         ) : (
           <EmptyState
             description="This section is coming soon."
@@ -67,6 +70,11 @@ function PatientDashboardPage() {
           />
         )}
       </Panel>
+
+      <BookingModal
+        doctor={bookingDoctor}
+        onClose={() => setBookingDoctor(null)}
+      />
     </div>
   );
 }
