@@ -325,6 +325,57 @@ export function CheckmarkIcon(props: IconProps) {
   );
 }
 
+export function SearchIcon(props: IconProps) {
+  return (
+    <svg
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      {...props}
+    >
+      <circle cx="11" cy="11" r="6.5" />
+      <path strokeLinecap="round" d="m16 16 4.5 4.5" />
+    </svg>
+  );
+}
+
+export function ClockHistoryIcon(props: IconProps) {
+  return (
+    <svg
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      {...props}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3.5 12a8.5 8.5 0 1 0 2.5-6M3.5 4v4h4M12 8v4l3 2"
+      />
+    </svg>
+  );
+}
+
+export function PillIcon(props: IconProps) {
+  return (
+    <svg
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      {...props}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M10.5 20.5a4.95 4.95 0 0 1-7-7l6-6a4.95 4.95 0 0 1 7 7l-6 6ZM7.5 10.5l6 6"
+      />
+    </svg>
+  );
+}
+
 export function ClinicCalendarIcon(props: IconProps) {
   return (
     <svg

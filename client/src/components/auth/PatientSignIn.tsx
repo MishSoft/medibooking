@@ -11,6 +11,7 @@ import { patientSignInSchema } from "../../schemas/signIn.schema";
 import type { LoginInput } from "../../schemas/auth.schema";
 import FieldError from "../../shared/ui/FieldError";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { useLogin } from "../../hooks/useLogin";
 
 type PatientSignInProps = {
@@ -23,6 +24,7 @@ const fieldBorder = (hasError: boolean) =>
 function PatientSignIn({ onRegisterClick }: PatientSignInProps) {
   const [loginError, setLoginError] = useState("");
   const login = useLogin();
+  const navigate = useNavigate();
 
   const {
     register,
@@ -35,6 +37,7 @@ function PatientSignIn({ onRegisterClick }: PatientSignInProps) {
     try {
       const response = await login.mutateAsync(data);
       console.log("Patient logged in:", response);
+      navigate("/dashboard/patient");
     } catch (error) {
       setLoginError(error instanceof Error ? error.message : "Login failed.");
     }
