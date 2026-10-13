@@ -10,7 +10,9 @@ import DashboardTabs, {
   type DashboardTab,
 } from "../../../components/dashboard/DashboardTabs";
 import BookingModal from "../../../components/booking/BookingModal";
+import AppointmentHistorySection from "../../../components/patient/AppointmentHistorySection";
 import FindDoctorSection from "../../../components/patient/FindDoctorSection";
+import MyAppointmentsSection from "../../../components/patient/MyAppointmentsSection";
 import type { Doctor } from "../../../types/doctor";
 import EmptyState from "../../../shared/ui/EmptyState";
 import Panel from "../../../shared/ui/Panel";
@@ -62,6 +64,12 @@ function PatientDashboardPage() {
       >
         {activeTab === "doctors" ? (
           <FindDoctorSection onBook={setBookingDoctor} />
+        ) : activeTab === "appointments" ? (
+          <MyAppointmentsSection
+            onFindDoctor={() => setSearchParams({ tab: "doctors" })}
+          />
+        ) : activeTab === "history" ? (
+          <AppointmentHistorySection />
         ) : (
           <EmptyState
             description="This section is coming soon."

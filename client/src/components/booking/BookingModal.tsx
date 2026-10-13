@@ -1,10 +1,16 @@
 import { useState } from "react";
 import { addMonths, endOfMonth, startOfToday } from "date-fns";
 import { BadgeCheckIcon } from "../../assets/icons/Icons";
+import {
+  useAppointments,
+  useBookAppointment,
+} from "../../hooks/useAppointments";
 import { getMockSlots, hasWorkingHours } from "../../mocks/slots";
+import { AppointmentStatus } from "../../types/appointment";
 import type { Doctor } from "../../types/doctor";
 import Button from "../../shared/ui/Button";
 import DatePicker from "../../shared/ui/DatePicker";
+import FieldError from "../../shared/ui/FieldError";
 import Modal from "../../shared/ui/Modal";
 import { getDoctorName } from "../doctors/DoctorCard";
 import BookingSummary from "./BookingSummary";
@@ -24,12 +30,32 @@ function BookingModal({ doctor, onClose }: BookingModalProps) {
 
   const today = startOfToday();
   const lastBookableDay = endOfMonth(addMonths(today, BOOKING_WINDOW_MONTHS));
-  const slots = doctor && date ? getMockSlots(doctor.id, date) : [];
+  const { data: appointments = [] } = useAppointments();
+  const bookAppointment = useBookAppointment();
+
+  // Slots already taken by this patient's scheduled visits with the doctor
+  const bookedTimes = new Set(
+    appointments
+      .filter(
+        (item) =>
+          item.doctor.id === doctor?.id &&
+          item.status === AppointmentStatus.SCHEDULED,
+      )
+      .map((item) => Date.parse(item.startsAt)),
+  );
+  const slots =
+    doctor && date
+      ? getMockSlots(doctor.id, date).map((item) => ({
+          ...item,
+          available: item.available && !bookedTimes.has(item.start.getTime()),
+        }))
+      : [];
 
   const handleClose = () => {
     setDate(undefined);
     setSlot(undefined);
     setIsConfirmed(false);
+    bookAppointment.reset();
     onClose();
   };
 
@@ -38,8 +64,13 @@ function BookingModal({ doctor, onClose }: BookingModalProps) {
     setSlot(undefined);
   };
 
-  // Persisting the booking is wired to the API in a later part
-  const handleConfirm = () => setIsConfirmed(true);
+  const handleConfirm = () => {
+    if (!doctor || !slot) return;
+    bookAppointment.mutate(
+      { doctor, startsAt: slot.toISOString() },
+      { onSuccess: () => setIsConfirmed(true) },
+    );
+  };
 
   if (!doctor) return null;
 
@@ -70,8 +101,11 @@ function BookingModal({ doctor, onClose }: BookingModalProps) {
           <Button onClick={handleClose} variant="secondary">
             Cancel
           </Button>
-          <Button disabled={!slot} onClick={handleConfirm}>
-            Confirm Appointment
+          <Button
+            disabled={!slot || bookAppointment.isPending}
+            onClick={handleConfirm}
+          >
+            {bookAppointment.isPending ? "Booking…" : "Confirm Appointment"}
           </Button>
         </>
       }
@@ -103,6 +137,10 @@ function BookingModal({ doctor, onClose }: BookingModalProps) {
               Pick a date to see available time slots.
             </p>
           )}
+          <FieldError
+            id="booking-error"
+            message={bookAppointment.error?.message}
+          />
         </div>
       </div>
     </Modal>
