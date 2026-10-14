@@ -60,6 +60,12 @@ export const getDoctors = async (req: Request, res: Response) => {
             },
           },
         },
+        {
+          primarySpecialty: {
+            contains: searchTerm,
+            mode: "insensitive"
+          }
+        }
       ];
     }
 
