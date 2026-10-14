@@ -3,9 +3,9 @@ import { prisma } from "../db/prisma";
 
 export const getPatientAppointments = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const patientId = req.user?.userId;
 
-    if (!userId) {
+    if (!patientId) {
       return res.status(401).json({
         success: false,
         message: "ავტორიზაცია სავალდებულოა",
@@ -14,7 +14,7 @@ export const getPatientAppointments = async (req: Request, res: Response) => {
 
     const appointments = await prisma.appointment.findMany({
       where: {
-        patientId: userId,
+        patientId: patientId,
       },
       include: {
         doctor: {
@@ -23,11 +23,11 @@ export const getPatientAppointments = async (req: Request, res: Response) => {
               select: {
                 firstName: true,
                 lastName: true,
-                phone: true,
               },
             },
             clinic: {
               select: {
+                id: true,
                 name: true,
                 address: true,
               },
