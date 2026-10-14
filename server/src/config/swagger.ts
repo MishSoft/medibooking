@@ -180,12 +180,12 @@ const options: swaggerJsdoc.Options = {
                     doctorId: {
                       type: "string",
                       format: "uuid",
-                      example: "clw12345-..."
+                      example: "clw12345-...",
                     },
                     startsAt: {
                       type: "string",
                       format: "date-time",
-                      example: "2026-10-25T10:00:00Z"
+                      example: "2026-10-25T10:00:00Z",
                     },
                   },
                 },
@@ -218,6 +218,48 @@ const options: swaggerJsdoc.Options = {
           responses: {
             200: { description: "რეცეპტების სია წარმატებით წამოიღო" },
             401: { description: "არაავტორიზებული" },
+          },
+        },
+      },
+      "/api/clinics": {
+        get: {
+          summary: "კლინიკების სიის წამოღება",
+          tags: ["Clinics"],
+          responses: {
+            200: { description: "კლინიკების სია წარმატებით წამოიღო" },
+          },
+        },
+      },
+      "/api/doctors": {
+        get: {
+          summary:
+            "ექიმების სიის წამოღება ფილტრებით (search, specialty, clinicId)",
+          tags: ["Doctors"],
+          parameters: [
+            {
+              name: "search",
+              in: "query",
+              required: false,
+              schema: { type: "string" },
+              description: "ძებნა სახელით ან გვარით",
+            },
+            {
+              name: "specialty",
+              in: "query",
+              required: false,
+              schema: { type: "string" },
+              description: "სპეციალობით ფილტრაცია",
+            },
+            {
+              name: "clinicId",
+              in: "query",
+              required: false,
+              schema: { type: "string" },
+              description: "კლინიკის ID-ით ფილტრაცია",
+            },
+          ],
+          responses: {
+            200: { description: "ექიმების სია წარმატებით წამოიღო" },
           },
         },
       },
