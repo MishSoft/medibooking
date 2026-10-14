@@ -6,7 +6,7 @@ import {
   loginController,
   getMeController,
   logoutController,
-} from "../controllers/auth.controllers";
+} from "../controllers/auth.controller";
 import { validate } from "../middleware/validation.middleware";
 import {
   patientRegisterSchema,

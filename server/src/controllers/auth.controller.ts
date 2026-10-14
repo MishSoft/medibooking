@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { success, ZodError } from "zod";
+import { ZodError } from "zod";
 import {
   ClinicRegisterInput,
   clinicRegisterSchema,

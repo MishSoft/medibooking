@@ -25,6 +25,13 @@ enum Gender {
   UNDISCLOSED
 }
 
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  PENDING
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -39,6 +46,8 @@ model User {
   patientProfile PatientProfile?
   doctorProfile  DoctorProfile?
   managedClinic  Clinic?
+  appointments   Appointment[]
+  prescriptions  Prescription[]
 }
 
 model PatientProfile {
@@ -70,6 +79,9 @@ model DoctorProfile {
   city             String
   clinicId         String
   clinic           Clinic    @relation(fields: [clinicId], references: [id])
+
+  appointments  Appointment[]
+  prescriptions Prescription[]
 }
 
 model Clinic {
@@ -88,4 +100,32 @@ model Clinic {
   departments    String[]
   doctors        DoctorProfile[]
   city           String?
+}
+
+model Appointment {
+  id        String            @id @default(uuid())
+  patientId String
+  patient   User              @relation(fields: [patientId], references: [id], onDelete: Cascade, map: "Appointment_patient_fkey_custom")
+  doctorId  String
+  doctor    DoctorProfile     @relation(fields: [patientId], references: [id], onDelete: Cascade, map: "Appointment_doctor_fkey_custom")
+  startAt   DateTime
+  status    AppointmentStatus @default(SCHEDULED)
+  notes     String?
+  createdAt DateTime          @default(now())
+
+  @@unique([doctorId, startAt])
+}
+
+model Prescription {
+  id           String        @id @default(uuid())
+  patientId    String
+  patient      User          @relation(fields: [patientId], references: [id], onDelete: Cascade, map: "Prescription_patient_fkey_custom")
+  doctorId     String
+  doctor       DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade, map: "Prescription_doctor_fkey_custom")
+  medication   String
+  dosage       String
+  frequency    String
+  instructions String?
+  issuedAt      DateTime      @default(now())
+  validUntil   DateTime
 }

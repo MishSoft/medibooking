@@ -164,6 +164,63 @@ const options: swaggerJsdoc.Options = {
           },
         },
       },
+      "/api/appointments": {
+        post: {
+          summary: "ვიზიტის დაჯავშნა (პაციენტი)",
+          tags: ["Appointments"],
+          security: [{ BearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["doctorId", "startsAt"],
+                  properties: {
+                    doctorId: {
+                      type: "string",
+                      format: "uuid",
+                      example: "clw12345-..."
+                    },
+                    startsAt: {
+                      type: "string",
+                      format: "date-time",
+                      example: "2026-10-25T10:00:00Z"
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            201: { description: "ვიზიტი წარმატებით დაჯავშნა" },
+            400: { description: "ვალიდაციის შეცდომა ან დრო დაკავებულია" },
+            401: { description: "არაავტორიზებული" },
+          },
+        },
+      },
+      "/api/patient/appointments": {
+        get: {
+          summary: "პაციენტის ვიზიტების ისტორია",
+          tags: ["Patient Dashboard"],
+          security: [{ BearerAuth: [] }],
+          responses: {
+            200: { description: "ვიზიტების სია წარმატებით წამოიღო" },
+            401: { description: "არაავტორიზებული" },
+          },
+        },
+      },
+      "/api/patient/prescriptions": {
+        get: {
+          summary: "პაციენტის რეცეპტების სია",
+          tags: ["Patient Dashboard"],
+          security: [{ BearerAuth: [] }],
+          responses: {
+            200: { description: "რეცეპტების სია წარმატებით წამოიღო" },
+            401: { description: "არაავტორიზებული" },
+          },
+        },
+      },
     },
   },
   apis: [],
