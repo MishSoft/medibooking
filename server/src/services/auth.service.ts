@@ -9,7 +9,12 @@ import {
   PatientRegisterInput,
 } from "../schemas/auth.schema";
 import { Request, Response } from "express";
-const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-key";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is missing.");
+}
+
 const JWT_EXPIRES_IN = "7d";
 
 export class AuthService {
@@ -257,7 +262,7 @@ export class AuthService {
   }
 
   private static generateToken(userId: string, role: Role) {
-    return jwt.sign({ userId, role }, JWT_SECRET, {
+    return jwt.sign({ userId, role }, JWT_SECRET as string, {
       expiresIn: JWT_EXPIRES_IN,
     });
   }
@@ -295,21 +300,17 @@ export class AuthService {
     return user;
   }
 
-
   static async logout(req: Request, res: Response): Promise<Response> {
     try {
       return res.status(200).json({
         success: true,
-        message: "Successfully loged out."
-      })
+        message: "Successfully loged out.",
+      });
     } catch (error) {
       return res.status(500).json({
         success: false,
-        message: "Signout error."
-      })
-    }  }
-
-
+        message: "Signout error.",
+      });
+    }
+  }
 }
-
-
