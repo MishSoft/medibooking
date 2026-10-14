@@ -74,6 +74,8 @@ export const getDoctors = async (req: Request, res: Response) => {
       select: {
         id: true,
         primarySpecialty: true,
+        yearsOfPractice: true,
+        bio: true,
         user: {
           select: {
             firstName: true,
