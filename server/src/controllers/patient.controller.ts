@@ -16,9 +16,18 @@ export const getPatientAppointments = async (req: Request, res: Response) => {
       where: {
         patientId: patientId,
       },
-      include: {
+      select: {
+        id: true,
+        startAt: true,
+        status: true,
+        notes: true,
+        createdAt: true,
         doctor: {
-          include: {
+          select: {
+            id: true,
+            primarySpecialty: true,
+            yearsOfPractice: true,
+            bio: true,
             user: {
               select: {
                 firstName: true,
@@ -71,10 +80,12 @@ export const getPatientPrescriptions = async (req: Request, res: Response) => {
       },
       select: {
         id: true,
-        medicationName: true,
+        medication: true,
         dosage: true,
+        frequency: true,
         instructions: true,
         issuedAt: true,
+        validUntil: true,
         doctor: {
           select: {
             id: true,

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../db/prisma";
-import { success, z } from "zod";
+import { z } from "zod";
 
 const createAppointmentSchema = z.object({
   doctorId: z.string().uuid("Wrong Doctor ID type"),
@@ -25,7 +25,7 @@ export const createAppointment = async (req: Request, res: Response) => {
     if (!validationResult.success) {
       return res.status(400).json({
         success: false,
-        mesaage: "Wrong data",
+        message: "Wrong data",
         error: validationResult.error.format(),
       });
     }
@@ -82,7 +82,7 @@ export const createAppointment = async (req: Request, res: Response) => {
     });
 
     if (!doctor) {
-      return res.status(401).json({
+      return res.status(404).json({
         success: false,
         message: "Can't find Doctor.",
       });

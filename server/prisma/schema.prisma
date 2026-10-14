@@ -113,7 +113,11 @@ model Appointment {
   notes     String?
   createdAt DateTime          @default(now())
 
-  @@unique([doctorId, startAt])
+  // Double-booking is prevented by the partial unique index
+  // "Appointment_doctor_active_slot_key" (SCHEDULED only) — see migration
+  // 20261015000000_appointment_active_slot_index. Prisma can't express it here.
+  @@index([doctorId, startAt])
+  @@index([patientId])
 }
 
 model Prescription {
