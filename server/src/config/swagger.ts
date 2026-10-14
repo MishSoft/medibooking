@@ -263,6 +263,15 @@ const options: swaggerJsdoc.Options = {
           },
         },
       },
+      "/api/doctors/specialties": {
+        get: {
+          summary: "ექიმების სპეციალობების სიის წამოღება",
+          tags: ["Doctors"],
+          responses: {
+            200: { description: "სპეციალობების სია წარმატებით წამოიღო" },
+          },
+        },
+      },
     },
   },
   apis: [],
