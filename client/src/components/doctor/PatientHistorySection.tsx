@@ -1,0 +1,66 @@
+import { useState } from "react";
+import { RecordsFolderIcon, SearchIcon } from "../../assets/icons/Icons";
+import { useAppointments } from "../../hooks/useAppointments";
+import { getPastAppointments } from "../../utils/appointments";
+import Input from "../../shared/ui/Input";
+import QueryState from "../../shared/ui/QueryState";
+import EmptyState from "../../shared/ui/EmptyState";
+import PatientVisitCard from "./PatientVisitCard";
+
+function PatientHistorySection() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const { data = [], isPending, error } = useAppointments();
+
+  const pastAppointments = getPastAppointments(data);
+
+  const filteredAppointments = pastAppointments.filter((apt) => {
+    const searchLower = searchQuery.toLowerCase();
+    // Filter by clinic name or specialty
+    return (
+      apt.doctor.clinic.name.toLowerCase().includes(searchLower) ||
+      apt.doctor.specialty.toLowerCase().includes(searchLower)
+    );
+  });
+
+  return (
+    <QueryState error={error} isPending={isPending}>
+      <div className="space-y-4">
+        <div className="relative">
+          <SearchIcon
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-on-surface-variant"
+          />
+          <Input
+            placeholder="Search by clinic or specialty..."
+            className="pl-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        {filteredAppointments.length > 0 ? (
+          <div className="space-y-3">
+            <p className="text-label-md text-on-surface-variant">
+              {filteredAppointments.length} past visit
+              {filteredAppointments.length === 1 ? "" : "s"}
+            </p>
+            {filteredAppointments.map((appointment) => (
+              <PatientVisitCard
+                key={appointment.id}
+                appointment={appointment}
+              />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            description="No past appointments found."
+            icon={RecordsFolderIcon}
+            title="No visit history"
+          />
+        )}
+      </div>
+    </QueryState>
+  );
+}
+
+export default PatientHistorySection;

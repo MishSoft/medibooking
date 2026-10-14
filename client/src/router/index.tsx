@@ -5,6 +5,7 @@ import ClinicRegistrationPage from '../pages/register-clinic';
 import PatientRegistrationPage from '../pages/register-patient';
 import DashboardLayout from '../layouts/DashboardLayout';
 import PatientDashboardPage from '../pages/dashboards/patient';
+import DoctorDashboardPage from '../pages/dashboards/doctor';
 import { queryClient, postsQueryOptions } from './queryClient';
 
 export const router = createBrowserRouter([
@@ -34,6 +35,10 @@ export const router = createBrowserRouter([
       {
         path: 'patient',
         element: <PatientDashboardPage />,
+      },
+      {
+        path: 'doctor',
+        element: <DoctorDashboardPage />,
       },
     ],
   },

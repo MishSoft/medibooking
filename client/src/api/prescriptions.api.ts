@@ -3,9 +3,20 @@ import { mockDelay } from "../mocks/appointments";
 import { mockPrescriptions } from "../mocks/prescriptions";
 import type { Prescription } from "../types/prescription";
 
+export type CreatePrescriptionPayload = Omit<Prescription, "id">;
+
 export const prescriptionsApi = {
   list: async (): Promise<Prescription[]> => {
     await mockDelay();
     return [...mockPrescriptions];
+  },
+  create: async (payload: CreatePrescriptionPayload): Promise<Prescription> => {
+    await mockDelay();
+    const prescription: Prescription = {
+      id: crypto.randomUUID(),
+      ...payload,
+    };
+    mockPrescriptions.push(prescription);
+    return prescription;
   },
 };
