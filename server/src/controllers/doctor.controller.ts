@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { Prisma, prisma } from "../db/prisma";
 
-
 export const getDoctorSpecialties = async (req: Request, res: Response) => {
   try {
     const doctors = await prisma.doctorProfile.findMany({
@@ -27,42 +26,41 @@ export const getDoctorSpecialties = async (req: Request, res: Response) => {
   }
 };
 
-
 export const getDoctors = async (req: Request, res: Response) => {
   try {
-    const { search, specialty, clinicId } = req.body
+    const { search, specialty, clinicId } = req.body;
 
-    const where: Prisma.DoctorProfileWhereInput = {}
+    const where: Prisma.DoctorProfileWhereInput = {};
 
     if (specialty) {
-      where.primarySpecialty = String(specialty)
+      where.primarySpecialty = String(specialty);
     }
 
     if (clinicId) {
-      where.primarySpecialty = String(specialty)
+      where.primarySpecialty = String(clinicId);
     }
 
     if (search) {
-      const searchTerm = String(search)
+      const searchTerm = String(search);
 
       where.OR = [
         {
           user: {
-          firstName: {
-            contains: searchTerm,
-            mode: 'insensitive'
-          }
-        }
+            firstName: {
+              contains: searchTerm,
+              mode: "insensitive",
+            },
+          },
         },
         {
           user: {
             lastName: {
               contains: searchTerm,
-              mode: "insensitive"
-            }
-          }
-        }
-      ]
+              mode: "insensitive",
+            },
+          },
+        },
+      ];
     }
 
     const doctors = await prisma.doctorProfile.findMany({
@@ -73,29 +71,29 @@ export const getDoctors = async (req: Request, res: Response) => {
             firstName: true,
             lastName: true,
             email: true,
-            phone: true
-          }
+            phone: true,
+          },
         },
         clinic: {
           select: {
             id: true,
             name: true,
-            address: true
-          }
-        }
-      }
-    })
+            address: true,
+          },
+        },
+      },
+    });
 
     return res.status(200).json({
       success: true,
-      data: doctors
-    })
+      data: doctors,
+    });
   } catch (error) {
-    console.error("Error fetching doctors:", error)
+    console.error("Error fetching doctors:", error);
 
     return res.status(500).json({
       success: false,
-      message: (error as Error).message || "სერვერის შეცდომა."
-    })
+      message: (error as Error).message || "სერვერის შეცდომა.",
+    });
   }
-}
+};
