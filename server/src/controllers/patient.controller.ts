@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../db/prisma";
 
-
 export const getPatientAppointments = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
@@ -70,13 +69,27 @@ export const getPatientPrescriptions = async (req: Request, res: Response) => {
       where: {
         patientId: userId,
       },
-      include: {
+      select: {
+        id: true,
+        medicationName: true,
+        dosage: true,
+        instructions: true,
+        issuedAt: true,
         doctor: {
-          include: {
+          select: {
+            id: true,
+            primarySpecialty: true,
             user: {
               select: {
                 firstName: true,
                 lastName: true,
+              },
+            },
+            clinic: {
+              select: {
+                id: true,
+                name: true,
+                address: true,
               },
             },
           },

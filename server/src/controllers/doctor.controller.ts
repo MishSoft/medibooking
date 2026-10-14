@@ -10,7 +10,7 @@ export const getDoctorSpecialties = async (req: Request, res: Response) => {
       distinct: ["primarySpecialty"],
     });
 
-    const specialties = doctors.map((doc) => doc.primarySpecialty);
+    const specialties = doctors.map((doc) => doc.primarySpecialty).sort((a,b) => a.localeCompare(b));
 
     return res.status(200).json({
       success: true,
@@ -28,7 +28,7 @@ export const getDoctorSpecialties = async (req: Request, res: Response) => {
 
 export const getDoctors = async (req: Request, res: Response) => {
   try {
-    const { search, specialty, clinicId } = req.body;
+    const { search, specialty, clinicId } = req.query;
 
     const where: Prisma.DoctorProfileWhereInput = {};
 
@@ -37,7 +37,7 @@ export const getDoctors = async (req: Request, res: Response) => {
     }
 
     if (clinicId) {
-      where.primarySpecialty = String(clinicId);
+      where.clinicId = String(clinicId);
     }
 
     if (search) {
@@ -65,14 +65,14 @@ export const getDoctors = async (req: Request, res: Response) => {
 
     const doctors = await prisma.doctorProfile.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        primarySpecialty: true,
         user: {
           select: {
             firstName: true,
             lastName: true,
-            email: true,
-            phone: true,
-          },
+          }
         },
         clinic: {
           select: {

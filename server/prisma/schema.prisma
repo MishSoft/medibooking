@@ -107,7 +107,7 @@ model Appointment {
   patientId String
   patient   User              @relation(fields: [patientId], references: [id], onDelete: Cascade, map: "Appointment_patient_fkey_custom")
   doctorId  String
-  doctor    DoctorProfile     @relation(fields: [patientId], references: [id], onDelete: Cascade, map: "Appointment_doctor_fkey_custom")
+  doctor    DoctorProfile     @relation(fields: [doctorId], references: [id], onDelete: Cascade, map: "Appointment_doctor_fkey_custom")
   startAt   DateTime
   status    AppointmentStatus @default(SCHEDULED)
   notes     String?
