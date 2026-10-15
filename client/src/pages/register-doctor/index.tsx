@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from "react";
-import { Link } from "react-router";
+import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
 import {
   BadgeCheckIcon,
   EmailIcon,
@@ -16,9 +17,20 @@ import Footer from "../../components/Footer";
 import Header from "../../components/Header";
 import Button from "../../shared/ui/Button";
 import Input from "../../shared/ui/Input";
+import { Gender } from "../../types/enums";
+import {
+  doctorRegistrationFormSchema,
+  type DoctorRegistrationFormInput,
+  type DoctorRegistrationFormOutput,
+} from "../../schemas/doctorRegistration.schema";
 import YearsOfPracticeField from "./components/YearsOfPracticeField";
 
-const genderOptions = ["Male", "Female", "Non-binary", "Undisclosed"];
+const genderOptions = [
+  { label: "Male", value: Gender.MALE },
+  { label: "Female", value: Gender.FEMALE },
+  { label: "Non-binary", value: Gender.NONBINARY },
+  { label: "Undisclosed", value: Gender.UNDISCLOSED },
+];
 
 const specialtyOptions = [
   "Cardiology & Cardiovascular Surgery",
@@ -40,21 +52,35 @@ const specialtyOptions = [
 function DoctorRegistrationPage() {
   const [submissionMessage, setSubmissionMessage] = useState("");
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const {
+    control,
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<
+    DoctorRegistrationFormInput,
+    unknown,
+    DoctorRegistrationFormOutput
+  >({
+    resolver: zodResolver(doctorRegistrationFormSchema),
+    defaultValues: {
+      gender: Gender.MALE,
+      primarySpecialty: specialtyOptions[0],
+      yearsOfPractice: 12,
+      facility: "Tbilisi Central Clinic (Main Campus)",
+      city: "Tbilisi Metropolitan",
+      licenseCertification: false,
+      clinicalConsent: false,
+    },
+  });
 
-    const formData = new FormData(event.currentTarget);
-    if (formData.get("password") !== formData.get("confirmPassword")) {
-      setSubmissionMessage(
-        "Passwords do not match. Please check both password fields.",
-      );
-      return;
-    }
-
+  // TODO: submit via authApi once the doctor payload mapper and clinic list exist
+  const onSubmit = async (data: DoctorRegistrationFormOutput) => {
+    console.log("Doctor registration data:", data);
     setSubmissionMessage(
       "Practitioner registration is not connected to a submission service yet.",
     );
-  }
+  };
 
   return (
     <div className="min-h-screen bg-surface-dim font-inter text-on-surface">
@@ -81,7 +107,11 @@ function DoctorRegistrationPage() {
             </p>
           </div>
 
-          <form className="space-y-5" onSubmit={handleSubmit}>
+          <form
+            className="space-y-5"
+            noValidate
+            onSubmit={handleSubmit(onSubmit)}
+          >
             <FormInputsWrapper
               formInputsSectionNumber="01"
               formInputsSectionTitle="Personal & Legal Identity"
@@ -96,17 +126,19 @@ function DoctorRegistrationPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
                   autoComplete="given-name"
+                  error={errors.firstName?.message}
                   label="First Name (Legal Given Name)"
-                  name="firstName"
                   placeholder="e.g. Tamar"
                   required
+                  {...register("firstName")}
                 />
                 <Input
                   autoComplete="family-name"
+                  error={errors.lastName?.message}
                   label="Last Name (Legal Surname)"
-                  name="lastName"
                   placeholder="e.g. Beridze"
                   required
+                  {...register("lastName")}
                 />
               </div>
 
@@ -123,39 +155,44 @@ function DoctorRegistrationPage() {
                   </span>
                 </legend>
                 <div className="grid grid-cols-2 gap-1 rounded-lg bg-surface-lowest p-1 sm:grid-cols-4">
-                  {genderOptions.map((gender, index) => (
+                  {genderOptions.map(({ label, value }) => (
                     <label
                       className="cursor-pointer rounded-md px-2 py-2 text-center text-label-md text-on-surface-variant transition-colors has-[:checked]:bg-surface-container-high has-[:checked]:text-primary has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-primary"
-                      key={gender}
+                      key={value}
                     >
                       <input
                         className="sr-only"
-                        defaultChecked={index === 0}
-                        name="gender"
-                        required={index === 0}
                         type="radio"
-                        value={gender}
+                        value={value}
+                        {...register("gender")}
                       />
-                      {gender}
+                      {label}
                     </label>
                   ))}
                 </div>
+                {errors.gender && (
+                  <p className="mt-1 text-body-sm text-error" role="alert">
+                    {errors.gender.message}
+                  </p>
+                )}
               </fieldset>
 
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <Input
                   autoComplete="bday"
+                  error={errors.birthDate?.message}
                   label="Date of Birth"
                   labelAdornment={
                     <span className="text-body-sm text-on-surface-variant">
                       DD/MM/YYYY
                     </span>
                   }
-                  name="dateOfBirth"
                   required
                   type="date"
+                  {...register("birthDate")}
                 />
                 <Input
+                  error={errors.personalId?.message}
                   label="National ID Number (GEO)"
                   labelAdornment={
                     <span className="text-label-md text-secondary">
@@ -164,17 +201,15 @@ function DoctorRegistrationPage() {
                   }
                   leadingElement={<PatientIdIcon className="h-4 w-4" />}
                   maxLength={11}
-                  name="nationalId"
-                  pattern="[0-9]{11}"
                   placeholder="01024098412"
                   required
-                  title="Enter the 11-digit Georgian national ID number."
                   trailingElement={
                     <span className="rounded-md bg-surface-container-high px-2 py-1 text-label-md text-primary">
                       GEO-ID
                     </span>
                   }
                   inputMode="numeric"
+                  {...register("personalId")}
                 />
               </div>
             </FormInputsWrapper>
@@ -193,11 +228,12 @@ function DoctorRegistrationPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <Input
+                    error={errors.licenseNo?.message}
                     label="Medical License Number"
                     leadingElement={<LicenseCardIcon className="h-4 w-4" />}
-                    name="medicalLicenseNumber"
                     placeholder="GEO-MED-77192-TB"
                     required
+                    {...register("licenseNo")}
                   />
                   <p className="mt-1 text-body-sm text-on-surface-variant">
                     Issued by National Regulation Agency for Medical Activities
@@ -215,22 +251,37 @@ function DoctorRegistrationPage() {
                     </span>
                   </label>
                   <select
+                    aria-invalid={!!errors.primarySpecialty}
                     className="min-h-11 w-full rounded-lg bg-surface-lowest px-3 py-2 text-body-md text-on-surface shadow-elevation-1 outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-                    defaultValue={specialtyOptions[0]}
                     id="specialty"
-                    name="specialty"
-                    required
+                    {...register("primarySpecialty")}
                   >
                     {specialtyOptions.map((specialty) => (
                       <option key={specialty}>{specialty}</option>
                     ))}
                   </select>
+                  {errors.primarySpecialty && (
+                    <p className="mt-1 text-body-sm text-error" role="alert">
+                      {errors.primarySpecialty.message}
+                    </p>
+                  )}
                   <p className="mt-1 text-body-sm text-on-surface-variant">
                     Subspecialties can be configured post-onboarding in EHR
                   </p>
                 </div>
 
-                <YearsOfPracticeField />
+                <Controller
+                  control={control}
+                  name="yearsOfPractice"
+                  render={({ field, fieldState }) => (
+                    <YearsOfPracticeField
+                      error={fieldState.error?.message}
+                      onBlur={field.onBlur}
+                      onChange={field.onChange}
+                      value={field.value}
+                    />
+                  )}
+                />
 
                 <div>
                   <label
@@ -243,17 +294,21 @@ function DoctorRegistrationPage() {
                     </span>
                   </label>
                   <select
+                    aria-invalid={!!errors.facility}
                     className="min-h-11 w-full rounded-lg bg-surface-lowest px-3 py-2 text-body-md text-on-surface shadow-elevation-1 outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-                    defaultValue="Tbilisi Central Clinic (Main Campus)"
                     id="facility"
-                    name="facility"
-                    required
+                    {...register("facility")}
                   >
                     <option>Tbilisi Central Clinic (Main Campus)</option>
                     <option>University Clinic of Tbilisi</option>
                     <option>Batumi Medical Center</option>
                     <option>Other accredited facility</option>
                   </select>
+                  {errors.facility && (
+                    <p className="mt-1 text-body-sm text-error" role="alert">
+                      {errors.facility.message}
+                    </p>
+                  )}
                   <p className="mt-1 text-body-sm text-on-surface-variant">
                     Determines default on-premise consultation suite
                   </p>
@@ -275,34 +330,37 @@ function DoctorRegistrationPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
                   autoComplete="email"
+                  error={errors.email?.message}
                   label="Official Clinical Email Address"
                   leadingElement={<EmailIcon className="h-4 w-4" />}
-                  name="email"
                   placeholder="dr.tamar.b@tbilisiclinic.ge"
                   required
                   type="email"
+                  {...register("email")}
                 />
                 <Input
                   autoComplete="tel-national"
+                  error={errors.phone?.message}
                   label="Emergency Dispatch Mobile Phone"
                   leadingElement={
                     <span className="text-label-md text-primary">+995</span>
                   }
-                  name="mobilePhone"
                   placeholder="599 44 88 12"
                   required
                   type="tel"
+                  {...register("phone")}
                 />
               </div>
 
               <Input
                 autoComplete="street-address"
                 className="mt-4"
+                error={errors.address?.message}
                 label="Clinical Office / Primary Practice Street Address"
                 leadingElement={<InfoCircleIcon className="h-4 w-4" />}
-                name="streetAddress"
                 placeholder="29 Chavchavadze Ave, Building B, Floor 4, Suite 402"
                 required
+                {...register("address")}
               />
 
               <div className="mt-4 grid gap-4 sm:grid-cols-3">
@@ -317,12 +375,11 @@ function DoctorRegistrationPage() {
                     </span>
                   </label>
                   <select
+                    aria-invalid={!!errors.city}
                     autoComplete="address-level2"
                     className="min-h-11 w-full rounded-lg bg-surface-lowest px-3 py-2 text-body-md text-on-surface shadow-elevation-1 outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-                    defaultValue="Tbilisi Metropolitan"
                     id="region"
-                    name="region"
-                    required
+                    {...register("city")}
                   >
                     <option>Tbilisi Metropolitan</option>
                     <option>Adjara</option>
@@ -330,18 +387,27 @@ function DoctorRegistrationPage() {
                     <option>Kakheti</option>
                     <option>Other</option>
                   </select>
+                  {errors.city && (
+                    <p className="mt-1 text-body-sm text-error" role="alert">
+                      {errors.city.message}
+                    </p>
+                  )}
                 </div>
                 <Input
                   autoComplete="address-level3"
+                  error={errors.district?.message}
                   label="District / Municipality"
-                  name="district"
                   placeholder="Vake-Saburtalo"
+                  {...register("district")}
                 />
                 <Input
                   autoComplete="postal-code"
+                  error={errors.postalCode?.message}
+                  inputMode="numeric"
                   label="Postal Code"
-                  name="postalCode"
+                  maxLength={4}
                   placeholder="0179"
+                  {...register("postalCode")}
                 />
               </div>
             </FormInputsWrapper>
@@ -360,56 +426,76 @@ function DoctorRegistrationPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
                   autoComplete="new-password"
+                  error={errors.password?.message}
                   label="Portal & EHR Master Password"
                   leadingElement={<SecurityKeyIcon className="h-4 w-4" />}
-                  name="password"
                   required
                   type="password"
+                  {...register("password")}
                 />
                 <Input
                   autoComplete="new-password"
+                  error={errors.confirmPassword?.message}
                   label="Confirm Master Password"
                   leadingElement={<LockIcon className="h-4 w-4" />}
-                  name="confirmPassword"
                   required
                   type="password"
+                  {...register("confirmPassword")}
                 />
               </div>
+              <p className="mt-2 text-body-sm text-on-surface-variant">
+                Must contain at least 10 characters, one number, and one
+                symbol.
+              </p>
 
               <div className="mt-5 space-y-3">
-                <label className="flex cursor-pointer items-start gap-2 text-body-sm text-on-surface-variant">
-                  <input
-                    className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
-                    name="licenseCertification"
-                    required
-                    type="checkbox"
-                  />
-                  <span>
-                    I certify under legal penalty and medical board sanctions
-                    that my Georgian Ministry of Healthcare (MoH) practicing
-                    license is active, unencumbered, and currently valid for
-                    diagnostic and clinical prescription execution.
-                  </span>
-                </label>
-                <label className="flex cursor-pointer items-start gap-2 text-body-sm text-on-surface-variant">
-                  <input
-                    className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
-                    name="clinicalConsent"
-                    required
-                    type="checkbox"
-                  />
-                  <span>
-                    I consent to automated clinical appointment dispatch,
-                    calendar synchronization, and Telehealth WebRTC encrypted
-                    recording compliance according to HIPAA/GDPR clinical data
-                    protection frameworks.
-                  </span>
-                </label>
+                <div>
+                  <label className="flex cursor-pointer items-start gap-2 text-body-sm text-on-surface-variant">
+                    <input
+                      aria-invalid={!!errors.licenseCertification}
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+                      type="checkbox"
+                      {...register("licenseCertification")}
+                    />
+                    <span>
+                      I certify under legal penalty and medical board sanctions
+                      that my Georgian Ministry of Healthcare (MoH) practicing
+                      license is active, unencumbered, and currently valid for
+                      diagnostic and clinical prescription execution.
+                    </span>
+                  </label>
+                  {errors.licenseCertification && (
+                    <p className="mt-1 text-body-sm text-error" role="alert">
+                      {errors.licenseCertification.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="flex cursor-pointer items-start gap-2 text-body-sm text-on-surface-variant">
+                    <input
+                      aria-invalid={!!errors.clinicalConsent}
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+                      type="checkbox"
+                      {...register("clinicalConsent")}
+                    />
+                    <span>
+                      I consent to automated clinical appointment dispatch,
+                      calendar synchronization, and Telehealth WebRTC encrypted
+                      recording compliance according to HIPAA/GDPR clinical
+                      data protection frameworks.
+                    </span>
+                  </label>
+                  {errors.clinicalConsent && (
+                    <p className="mt-1 text-body-sm text-error" role="alert">
+                      {errors.clinicalConsent.message}
+                    </p>
+                  )}
+                </div>
               </div>
             </FormInputsWrapper>
 
             <div className="flex flex-wrap items-center justify-center gap-4 pt-1">
-              <Button className="px-5" type="submit">
+              <Button className="px-5" disabled={isSubmitting} type="submit">
                 <PractitionerCalendarIcon
                   aria-hidden="true"
                   className="h-4 w-4"
