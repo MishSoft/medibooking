@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
+import { authApi } from "../api/auth.api";
 import { authStorage } from "../api/auth.storage";
 import { PractitionerSignInIcon } from "../assets/icons/Icons";
 
@@ -12,7 +13,9 @@ function Header({ role = "Patient" }: HeaderProps) {
   const queryClient = useQueryClient();
   const isSignedIn = !!authStorage.getToken();
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    // Revoke the token on the server; sign out locally even if this fails
+    await authApi.logout().catch(() => undefined);
     authStorage.clear();
     // Drop cached data so the next user never sees the previous one's records
     queryClient.clear();
