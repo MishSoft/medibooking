@@ -1,4 +1,5 @@
-import { createBrowserRouter } from 'react-router';
+import { createBrowserRouter, redirect } from 'react-router';
+import { authStorage } from '../api/auth.storage';
 import App from '../App';
 import PathSelectorPage from '../pages/path-selector';
 import ClinicRegistrationPage from '../pages/register-clinic';
@@ -40,6 +41,9 @@ export const router = createBrowserRouter([
       {
         path: 'patient',
         element: <PatientDashboardPage />,
+        // Signed-out visitors go back to sign in
+        loader: () =>
+          authStorage.getToken() ? null : redirect('/path-selector'),
       },
       {
         path: 'doctor',
