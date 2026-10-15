@@ -10,7 +10,7 @@ export type Doctor = {
   lastName: string;
   specialty: string;
   clinic: Clinic;
-  experienceYears: number;
+  experienceYears?: number;
   bio?: string;
 };
 

@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { mockClinics, mockDoctors } from "../../mocks/doctors";
-import type { Doctor, DoctorFiltersValue } from "../../types/doctor";
+import { useDebouncedValue } from "../../hooks/useDebouncedValue";
+import { useClinics, useDoctors, useSpecialties } from "../../hooks/useDoctors";
+import type { Doctor } from "../../types/doctor";
+import QueryState from "../../shared/ui/QueryState";
 import DoctorFilters, { emptyDoctorFilters } from "../doctors/DoctorFilters";
 import DoctorList from "../doctors/DoctorList";
 
@@ -8,42 +10,36 @@ type FindDoctorSectionProps = {
   onBook?: (doctor: Doctor) => void;
 };
 
-const filterDoctors = (doctors: Doctor[], filters: DoctorFiltersValue) => {
-  const query = filters.query.trim().toLowerCase();
-
-  return doctors.filter((doctor) => {
-    const matchesQuery =
-      !query ||
-      `${doctor.firstName} ${doctor.lastName} ${doctor.specialty}`
-        .toLowerCase()
-        .includes(query);
-    const matchesSpecialty =
-      !filters.specialty || doctor.specialty === filters.specialty;
-    const matchesClinic =
-      !filters.clinicId || doctor.clinic.id === filters.clinicId;
-
-    return matchesQuery && matchesSpecialty && matchesClinic;
-  });
-};
-
 function FindDoctorSection({ onBook }: FindDoctorSectionProps) {
   const [filters, setFilters] = useState(emptyDoctorFilters);
+  // Debounce only the free-text search; selects apply immediately
+  const debouncedQuery = useDebouncedValue(filters.query);
 
-  const specialties = [...new Set(mockDoctors.map((d) => d.specialty))].sort();
-  const doctors = filterDoctors(mockDoctors, filters);
+  const { data: specialties = [] } = useSpecialties();
+  const { data: clinics = [] } = useClinics();
+  const {
+    data: doctors = [],
+    isPending,
+    isFetching,
+    error,
+  } = useDoctors({ ...filters, query: debouncedQuery });
 
   return (
     <div className="space-y-6">
       <DoctorFilters
-        clinics={mockClinics}
+        clinics={clinics}
         onChange={setFilters}
         specialties={specialties}
         value={filters}
       />
-      <p aria-live="polite" className="text-body-sm text-on-surface-variant">
-        {doctors.length} {doctors.length === 1 ? "doctor" : "doctors"} found
-      </p>
-      <DoctorList doctors={doctors} onBook={onBook} />
+      <QueryState error={error} isPending={isPending}>
+        <p aria-live="polite" className="text-body-sm text-on-surface-variant">
+          {isFetching
+            ? "Searching…"
+            : `${doctors.length} ${doctors.length === 1 ? "doctor" : "doctors"} found`}
+        </p>
+        <DoctorList doctors={doctors} onBook={onBook} />
+      </QueryState>
     </div>
   );
 }
