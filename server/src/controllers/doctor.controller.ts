@@ -5,6 +5,7 @@ import {
   doctorSlotsQuerySchema,
 } from "../schemas/doctor.schema";
 import {
+  CLINIC_TZ,
   generateDaySlots,
   validateSlot,
   getClinicNow,
@@ -155,7 +156,7 @@ export const getDoctorsSlots = async (req: Request, res: Response) => {
     }
 
     const dayLocal = DateTime.fromISO(date, {
-      zone: "Asia/Tbilisi",
+      zone: CLINIC_TZ,
     });
 
     if (!dayLocal.isValid || dayLocal.toISODate() !== date) {
@@ -202,7 +203,7 @@ export const getDoctorsSlots = async (req: Request, res: Response) => {
       data: slots,
     });
   } catch (error) {
-    console.error("Error fetching doctro slots:", error);
+    console.error("Error fetching doctor slots:", error);
 
     return res.status(500).json({
       success: false,
