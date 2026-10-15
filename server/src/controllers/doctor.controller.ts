@@ -1,5 +1,8 @@
 import { Request, Response } from "express";
 import { Prisma, prisma } from "../db/prisma";
+import { createAppointment } from "./appointment.controller";
+import { doctorSlotsParamsSchema, doctorSlotsQuerySchema } from "../schemas/doctor.schema";
+
 
 export const getDoctorSpecialties = async (req: Request, res: Response) => {
   try {
@@ -105,3 +108,51 @@ export const getDoctors = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+export const getDoctorsSlots = async (req: Request, res: Response) => {
+  try {
+    const params = doctorSlotsParamsSchema.safeParse(req.params)
+    if (!params.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Wrong data",
+        error: params.error.format()
+      })
+    }
+
+    const query = doctorSlotsQuerySchema.safeParse(req.query)
+    if (!query.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Wrong data",
+        error: query.error.format()
+      })
+    }
+
+    const { id } = params.data
+    const { date } = query.data
+
+    const foundDoc = await prisma.doctorProfile.findUnique({
+      where: { id },
+      select: {
+        id: true
+      }
+    })
+
+    if (!foundDoc) {
+      return res.status(404).json({
+        success: false,
+        message: "Can't find Doctor.",
+      });
+    }
+
+  } catch (error) {
+    console.error("Error fetching doctro slots:", error)
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error."
+    })
+  }
+}

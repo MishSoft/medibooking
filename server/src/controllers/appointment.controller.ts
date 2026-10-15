@@ -1,17 +1,13 @@
 import { Request, Response } from "express";
 import { DateTime } from "luxon";
-import { z } from "zod";
 import { prisma } from "../db/prisma";
+import { paramsSchema, createAppointmentSchema } from '../schemas/appointment.schema';
+
 
 const CLINIC_TZ = "Asia/Tbilisi";
 const WORK_START_HOUR = 9;
 const WORK_END_HOUR = 17;
 const MAX_MONTHS_AHEAD = 2;
-
-const createAppointmentSchema = z.object({
-  doctorId: z.string().uuid("Wrong Doctor ID type"),
-  startAt: z.string().datetime({ offset: true, message: "Wrong date type" }),
-});
 
 const isUniqueConstraintError = (error: unknown): boolean =>
   typeof error === "object" &&
@@ -43,7 +39,7 @@ export const createAppointment = async (req: Request, res: Response) => {
       });
     }
 
-    const validationResult = createAppointmentSchema.safeParse(req.body);
+    const validationResult = createAppointmentSchema.safeParse(req.body)
 
     if (!validationResult.success) {
       return res.status(400).json({
@@ -208,6 +204,92 @@ export const createAppointment = async (req: Request, res: Response) => {
     }
 
     console.error("Error creating appointment:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+    });
+  }
+};
+
+export const cancelAppointment = async (req: Request, res: Response) => {
+  try {
+    const patientId = req.user?.userId;
+
+    if (!patientId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authorization is required.",
+      });
+    }
+
+    const params = paramsSchema.safeParse(req.params);
+
+    if (!params.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Wrong data",
+        error: params.error.format(),
+      });
+    }
+
+    const { id } = params.data;
+
+    const appointment = await prisma.appointment.findUnique({
+      where: { id },
+      select: { id: true, patientId: true, status: true, startAt: true },
+    });
+
+    if (!appointment || appointment.patientId !== patientId) {
+      return res.status(404).json({
+        success: false,
+        message: "Appointment not found.",
+      });
+    }
+
+    if (appointment.status === "CANCELLED") {
+      return res.status(409).json({
+        success: false,
+        message: "Appointment is already cancelled.",
+      });
+    }
+
+    if (appointment.status === "COMPLETED") {
+      return res.status(409).json({
+        success: false,
+        message: "Completed appointments cannot be cancelled.",
+      });
+    }
+
+    if (appointment.startAt <= new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: "Past appointments cannot be cancelled.",
+      });
+    }
+
+    const result = await prisma.appointment.updateMany({
+      where: {
+        id,
+        patientId,
+        status: { in: ["SCHEDULED", "PENDING"] },
+      },
+      data: { status: "CANCELLED" },
+    });
+
+    if (result.count === 0) {
+      return res.status(409).json({
+        success: false,
+        message: "Appointment can no longer be cancelled.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "The visit has been cancelled.",
+      data: { id, status: "CANCELLED" },
+    });
+  } catch (error: unknown) {
+    console.error("Error cancelling appointment:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error.",

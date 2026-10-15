@@ -175,14 +175,14 @@ const options: swaggerJsdoc.Options = {
               "application/json": {
                 schema: {
                   type: "object",
-                  required: ["doctorId", "startsAt"],
+                  required: ["doctorId", "startAt"],
                   properties: {
                     doctorId: {
                       type: "string",
                       format: "uuid",
                       example: "clw12345-...",
                     },
-                    startsAt: {
+                    startAt: {
                       type: "string",
                       format: "date-time",
                       example: "2026-10-25T10:00:00Z",
@@ -269,6 +269,69 @@ const options: swaggerJsdoc.Options = {
           tags: ["Doctors"],
           responses: {
             200: { description: "სპეციალობების სია წარმატებით წამოიღო" },
+          },
+        },
+      },
+
+      "/api/doctors/{id}/slots": {
+        get: {
+          summary: "ექიმის თავისუფალი დროის სლოტების წამოღება",
+          tags: ["Doctors"],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              description: "ექიმის უნიკალური ID",
+              schema: {
+                type: "string",
+                format: "uuid",
+              },
+            },
+          ],
+          responses: {
+            200: {
+              description: "თავისუფალი დროის სლოტები წარმატებით წამოიღო",
+            },
+            400: {
+              description: "ექიმის ID არასწორია",
+            },
+            404: {
+              description: "ექიმი ვერ მოიძებნა",
+            },
+          },
+        },
+      },
+      "/api/appointments/{id}/cancel": {
+        patch: {
+          summary: "ვიზიტის გაუქმება",
+          tags: ["Appointments"],
+          security: [{ BearerAuth: [] }],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              description: "ვიზიტის უნიკალური ID",
+              schema: {
+                type: "string",
+                format: "uuid",
+              },
+            },
+          ],
+          responses: {
+            200: {
+              description: "ვიზიტი წარმატებით გაუქმდა",
+            },
+            400: {
+              description: "არასწორი ID ან ვიზიტის გაუქმება შეუძლებელია",
+            },
+            401: {
+              description: "მომხმარებელი არაავტორიზებულია",
+            },
+            404: {
+              description: "ვიზიტი ვერ მოიძებნა",
+            },
           },
         },
       },
