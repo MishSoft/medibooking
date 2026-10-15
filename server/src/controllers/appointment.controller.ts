@@ -1,13 +1,11 @@
 import { Request, Response } from "express";
 import { DateTime } from "luxon";
 import { prisma } from "../db/prisma";
-import { paramsSchema, createAppointmentSchema } from '../schemas/appointment.schema';
-
-
-const CLINIC_TZ = "Asia/Tbilisi";
-const WORK_START_HOUR = 9;
-const WORK_END_HOUR = 17;
-const MAX_MONTHS_AHEAD = 2;
+import {
+  paramsSchema,
+  createAppointmentSchema,
+} from "../schemas/appointment.schema";
+import { CLINIC_TZ, validateSlot, getClinicNow } from "../config/booking";
 
 const isUniqueConstraintError = (error: unknown): boolean =>
   typeof error === "object" &&
@@ -39,7 +37,7 @@ export const createAppointment = async (req: Request, res: Response) => {
       });
     }
 
-    const validationResult = createAppointmentSchema.safeParse(req.body)
+    const validationResult = createAppointmentSchema.safeParse(req.body);
 
     if (!validationResult.success) {
       return res.status(400).json({
@@ -63,43 +61,13 @@ export const createAppointment = async (req: Request, res: Response) => {
     }
 
     const startDate = startLocal.toJSDate();
-    const nowLocal = DateTime.now().setZone(CLINIC_TZ);
 
-    if (startLocal <= nowLocal) {
+    const validationError = validateSlot(startLocal, getClinicNow());
+
+    if (validationError) {
       return res.status(400).json({
         success: false,
-        message: "Cannot book appointments in the past.",
-      });
-    }
-
-    if (startLocal.weekday === 6 || startLocal.weekday === 7) {
-      return res.status(400).json({
-        success: false,
-        message: "Appointments cannot be booked on weekends.",
-      });
-    }
-
-    const { hour, minute, second, millisecond } = startLocal;
-
-    if (
-      hour < WORK_START_HOUR ||
-      hour >= WORK_END_HOUR ||
-      (minute !== 0 && minute !== 30) ||
-      second !== 0 ||
-      millisecond !== 0
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Appointments must be between 09:00 and 17:00 on a 30-minute grid.",
-      });
-    }
-
-    const maxDate = nowLocal.plus({ months: MAX_MONTHS_AHEAD });
-    if (startLocal > maxDate) {
-      return res.status(400).json({
-        success: false,
-        message: "Appointments cannot be booked more than 2 months in advance.",
+        message: validationError,
       });
     }
 

@@ -1,11 +1,20 @@
-import { Router } from "express"
-import { getDoctors, getDoctorSpecialties } from "../controllers/doctor.controller"
+import { Router } from "express";
+import {
+  getDoctors,
+  getDoctorSpecialties,
+  getDoctorsSlots,
+} from "../controllers/doctor.controller";
+import { authenticate, authorize } from "../middleware/auth.middleware";
 
+const router = Router();
 
-const router = Router()
+router.get("/doctors/specialties", getDoctorSpecialties);
+router.get("/doctors", getDoctors);
+router.get(
+  "/doctors/:id/slots",
+  authenticate,
+  authorize("PATIENT"),
+  getDoctorsSlots,
+);
 
-router.get("/doctors/specialties", getDoctorSpecialties)
-router.get('/doctors', getDoctors)
-
-
-export default router
+export default router;

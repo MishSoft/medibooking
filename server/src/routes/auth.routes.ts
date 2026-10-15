@@ -43,32 +43,3 @@ router.post('/logout', authenticate, logoutController)
 export default router;
 
 
-/**
- * @openapi
- * /api/auth/login:
- *   post:
- *     summary: მომხმარებლის ავტორიზაცია
- *     tags: [Auth]
- *     requestBody:
- *        required: true
- *        content:
- *          application/json
- *            schema:
- *              type: object
- *              required:
- *                - identifier
- *                - password
- *              properties:
- *                identifier:
- *                    type: string
- *                    example: patient@example.com
- *                password:
- *                    type: string
- *                    example: password123
- *        responses:
- *            200:
- *              description: წარმატებული ავტორიზაცია
- *            400:
- *              description: არასწორი მონაცემები
-**/
-

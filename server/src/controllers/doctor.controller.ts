@@ -1,9 +1,15 @@
 import { Request, Response } from "express";
 import { Prisma, prisma } from "../db/prisma";
-import { createAppointment } from "./appointment.controller";
-import { doctorSlotsParamsSchema, doctorSlotsQuerySchema } from "../schemas/doctor.schema";
-
-
+import {
+  doctorSlotsParamsSchema,
+  doctorSlotsQuerySchema,
+} from "../schemas/doctor.schema";
+import {
+  generateDaySlots,
+  validateSlot,
+  getClinicNow,
+} from "../config/booking";
+import { DateTime } from "luxon";
 export const getDoctorSpecialties = async (req: Request, res: Response) => {
   try {
     const doctors = await prisma.doctorProfile.findMany({
@@ -13,7 +19,9 @@ export const getDoctorSpecialties = async (req: Request, res: Response) => {
       distinct: ["primarySpecialty"],
     });
 
-    const specialties = doctors.map((doc) => doc.primarySpecialty).sort((a,b) => a.localeCompare(b));
+    const specialties = doctors
+      .map((doc) => doc.primarySpecialty)
+      .sort((a, b) => a.localeCompare(b));
 
     return res.status(200).json({
       success: true,
@@ -66,9 +74,9 @@ export const getDoctors = async (req: Request, res: Response) => {
         {
           primarySpecialty: {
             contains: searchTerm,
-            mode: "insensitive"
-          }
-        }
+            mode: "insensitive",
+          },
+        },
       ];
     }
 
@@ -83,7 +91,7 @@ export const getDoctors = async (req: Request, res: Response) => {
           select: {
             firstName: true,
             lastName: true,
-          }
+          },
         },
         clinic: {
           select: {
@@ -109,36 +117,35 @@ export const getDoctors = async (req: Request, res: Response) => {
   }
 };
 
-
 export const getDoctorsSlots = async (req: Request, res: Response) => {
   try {
-    const params = doctorSlotsParamsSchema.safeParse(req.params)
+    const params = doctorSlotsParamsSchema.safeParse(req.params);
     if (!params.success) {
       return res.status(400).json({
         success: false,
         message: "Wrong data",
-        error: params.error.format()
-      })
+        error: params.error.format(),
+      });
     }
 
-    const query = doctorSlotsQuerySchema.safeParse(req.query)
+    const query = doctorSlotsQuerySchema.safeParse(req.query);
     if (!query.success) {
       return res.status(400).json({
         success: false,
         message: "Wrong data",
-        error: query.error.format()
-      })
+        error: query.error.format(),
+      });
     }
 
-    const { id } = params.data
-    const { date } = query.data
+    const { id } = params.data;
+    const { date } = query.data;
 
     const foundDoc = await prisma.doctorProfile.findUnique({
       where: { id },
       select: {
-        id: true
-      }
-    })
+        id: true,
+      },
+    });
 
     if (!foundDoc) {
       return res.status(404).json({
@@ -147,12 +154,59 @@ export const getDoctorsSlots = async (req: Request, res: Response) => {
       });
     }
 
+    const dayLocal = DateTime.fromISO(date, {
+      zone: "Asia/Tbilisi",
+    });
+
+    if (!dayLocal.isValid || dayLocal.toISODate() !== date) {
+      return res.status(400).json({
+        success: false,
+        message: "Wrong date type.",
+      });
+    }
+
+    const nowLocal = getClinicNow();
+    const dayStart = dayLocal.startOf("day").toUTC().toJSDate();
+    const dayEnd = dayLocal.plus({ days: 1 }).startOf("day").toUTC().toJSDate();
+
+    const appointments = await prisma.appointment.findMany({
+      where: {
+        doctorId: id,
+        status: "SCHEDULED",
+        startAt: {
+          gte: dayStart,
+          lt: dayEnd,
+        },
+      },
+      select: {
+        startAt: true,
+      },
+    });
+
+    const bookedTimes = new Set(
+      appointments.map((appointment) => appointment.startAt.getTime()),
+    );
+
+    const slots = generateDaySlots(dayLocal).map((slot) => {
+      const validationError = validateSlot(slot, nowLocal);
+      const slotTime = slot.toUTC().toMillis();
+
+      return {
+        start: slot.toUTC().toISO(),
+        available: validationError === null && !bookedTimes.has(slotTime),
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: slots,
+    });
   } catch (error) {
-    console.error("Error fetching doctro slots:", error)
+    console.error("Error fetching doctro slots:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Internal server error."
-    })
+      message: "Internal server error.",
+    });
   }
-}
+};
