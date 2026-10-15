@@ -1,3 +1,4 @@
+import type { TimeSlot } from "../types/booking";
 import type { Clinic, Doctor, DoctorFiltersValue } from "../types/doctor";
 import type { ApiResponse } from "./auth.api";
 import { apiRequest } from "./client";
@@ -18,7 +19,12 @@ export type DoctorDto = {
   clinic: ClinicDto;
 };
 
-export const toClinic = (dto: ClinicDto): Clinic => ({
+export type TimeSlotDto = {
+  start: string; // ISO UTC
+  available: boolean;
+};
+
+export const toClinic =(dto: ClinicDto): Clinic => ({
   id: dto.id,
   name: dto.name,
   address: dto.address ?? "",
@@ -58,6 +64,16 @@ export const doctorsApi = {
       "api/doctors/specialties",
     );
     return response.data ?? [];
+  },
+  // date: "yyyy-MM-dd", interpreted by the server in clinic time
+  slots: async (doctorId: string, date: string): Promise<TimeSlot[]> => {
+    const response = await apiRequest<ApiResponse<TimeSlotDto[]>>(
+      `api/doctors/${doctorId}/slots?date=${date}`,
+    );
+    return (response.data ?? []).map((slot) => ({
+      start: new Date(slot.start),
+      available: slot.available,
+    }));
   },
   clinics: async (): Promise<Clinic[]> => {
     const response = await apiRequest<ApiResponse<ClinicDto[]>>("api/clinics");
