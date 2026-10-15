@@ -264,6 +264,7 @@ export class AuthService {
   private static generateToken(userId: string, role: Role) {
     return jwt.sign({ userId, role }, JWT_SECRET as string, {
       expiresIn: JWT_EXPIRES_IN,
+      jwtid: crypto.randomUUID(),
     });
   }
 
@@ -300,17 +301,14 @@ export class AuthService {
     return user;
   }
 
-  static async logout(req: Request, res: Response): Promise<Response> {
-    try {
-      return res.status(200).json({
-        success: true,
-        message: "Successfully loged out.",
-      });
-    } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: "Signout error.",
-      });
-    }
+  static async logout(jti: string, exp: number): Promise<void> {
+    await prisma.revokedToken.upsert({
+      where: { jti },
+      update: {},
+      create: {
+        jti,
+        expiresAt: new Date(exp * 1000),
+      },
+    });
   }
 }

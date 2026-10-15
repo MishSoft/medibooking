@@ -14,7 +14,10 @@ import {
   doctorRegisterSchema,
   loginSchema,
 } from "../schemas/auth.schema";
-import { authenticate } from "../middleware/auth.middleware";
+import {
+  authenticate,
+  authenticateForLogout,
+} from "../middleware/auth.middleware";
 
 const router = Router();
 
@@ -38,7 +41,7 @@ router.post(
 
 router.post("/login", validate(loginSchema), loginController);
 router.get("/me", authenticate, getMeController);
-router.post('/logout', authenticate, logoutController)
+router.post("/logout", authenticateForLogout, logoutController);
 
 export default router;
 
