@@ -3,6 +3,7 @@ import App from '../App';
 import PathSelectorPage from '../pages/path-selector';
 import ClinicRegistrationPage from '../pages/register-clinic';
 import PatientRegistrationPage from '../pages/register-patient';
+import DoctorRegistrationPage from '../pages/register-doctor';
 import DashboardLayout from '../layouts/DashboardLayout';
 import PatientDashboardPage from '../pages/dashboards/patient';
 import DoctorDashboardPage from '../pages/dashboards/doctor';
@@ -27,6 +28,10 @@ export const router = createBrowserRouter([
   {
     path: '/register-clinic',
     element: <ClinicRegistrationPage />,
+  },
+  {
+    path: '/register-doctor',
+    element: <DoctorRegistrationPage />,
   },
   {
     path: '/dashboard',

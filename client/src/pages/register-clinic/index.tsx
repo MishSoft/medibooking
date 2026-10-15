@@ -388,7 +388,7 @@ function ClinicRegistrationPage() {
                 Clinic Registration
               </Button>
               <p className="text-body-sm text-on-surface-variant">
-                Already authorized?{" "}
+                Already registered?{" "}
                 <Link
                   className="font-semibold text-secondary hover:underline"
                   state={{ showClinicSignIn: true }}
