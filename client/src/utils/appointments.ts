@@ -3,8 +3,13 @@ import { AppointmentStatus, type Appointment } from "../types/appointment";
 const byStartAsc = (a: Appointment, b: Appointment) =>
   Date.parse(a.startsAt) - Date.parse(b.startsAt);
 
+const activeStatuses: Appointment["status"][] = [
+  AppointmentStatus.SCHEDULED,
+  AppointmentStatus.PENDING,
+];
+
 export const isUpcoming = (appointment: Appointment, now = Date.now()) =>
-  appointment.status === AppointmentStatus.SCHEDULED &&
+  activeStatuses.includes(appointment.status) &&
   Date.parse(appointment.startsAt) >= now;
 
 export const getUpcomingAppointments = (appointments: Appointment[]) =>

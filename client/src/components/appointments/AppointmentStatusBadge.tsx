@@ -10,6 +10,7 @@ type AppointmentStatusBadgeProps = {
 
 const statusMeta = {
   [AppointmentStatus.SCHEDULED]: { label: "Scheduled", tone: "info" },
+  [AppointmentStatus.PENDING]: { label: "Pending", tone: "warning" },
   [AppointmentStatus.COMPLETED]: { label: "Completed", tone: "success" },
   [AppointmentStatus.CANCELLED]: { label: "Cancelled", tone: "error" },
 } as const;
