@@ -9,7 +9,7 @@
     "build": "tsc",
     "prisma:generate": "prisma generate",
     "start": "node dist/index.js",
-    "postinstall": "prisma skills sync || exit 0"
+    "postinstall": "prisma generate && (prisma skills sync || exit 0)"
   },
   "keywords": [],
   "author": "",

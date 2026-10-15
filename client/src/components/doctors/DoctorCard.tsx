@@ -26,7 +26,9 @@ function DoctorCard({ doctor, onBook }: DoctorCardProps) {
           <h3 className="truncate text-headline-sm">{name}</h3>
           <div className="mt-1 flex flex-wrap gap-2">
             <Tag tone="secondary">{doctor.specialty}</Tag>
-            <Tag>{doctor.experienceYears} yrs exp.</Tag>
+            {doctor.experienceYears !== undefined && (
+              <Tag>{doctor.experienceYears} yrs exp.</Tag>
+            )}
           </div>
         </div>
       </div>

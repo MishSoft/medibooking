@@ -13,6 +13,13 @@ export function usePrescriptions() {
   });
 }
 
+export function usePatientPrescriptions() {
+  return useQuery({
+    queryKey: [...prescriptionsQueryKey, "patient"],
+    queryFn: prescriptionsApi.listMine,
+  });
+}
+
 export function useAddPrescription() {
   const queryClient = useQueryClient();
 

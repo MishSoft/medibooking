@@ -1,8 +1,9 @@
 import type { Doctor } from "./doctor";
 
-// No Appointment model on the server yet — align with Prisma once it exists
+// Mirrors AppointmentStatus enum in server/prisma/schema.prisma
 export const AppointmentStatus = {
   SCHEDULED: "SCHEDULED",
+  PENDING: "PENDING",
   COMPLETED: "COMPLETED",
   CANCELLED: "CANCELLED",
 } as const;
@@ -12,7 +13,7 @@ export type AppointmentStatus =
 export type Appointment = {
   id: string;
   doctor: Doctor;
-  startsAt: string; // ISO date-time
+  startsAt: string; // ISO date-time (server field: startAt)
   status: AppointmentStatus;
   notes?: string;
 };

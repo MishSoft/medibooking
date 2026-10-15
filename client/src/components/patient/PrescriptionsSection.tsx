@@ -1,12 +1,12 @@
 import { PillIcon } from "../../assets/icons/Icons";
-import { usePrescriptions } from "../../hooks/usePrescriptions";
+import { usePatientPrescriptions } from "../../hooks/usePrescriptions";
 import EmptyState from "../../shared/ui/EmptyState";
 import QueryState from "../../shared/ui/QueryState";
 import { isPrescriptionActive } from "../prescriptions/PrescriptionCard";
 import PrescriptionList from "../prescriptions/PrescriptionList";
 
 function PrescriptionsSection() {
-  const { data = [], isPending, error } = usePrescriptions();
+  const { data = [], isPending, error } = usePatientPrescriptions();
 
   const sorted = [...data].sort(
     (a, b) => Date.parse(b.issuedAt) - Date.parse(a.issuedAt),

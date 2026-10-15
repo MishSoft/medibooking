@@ -70,6 +70,10 @@ export const authApi = {
       method: "POST",
       body: payload,
     }),
+  logout: () =>
+    apiRequest<ApiResponse>("api/auth/logout", {
+      method: "POST",
+    }),
   registerPatient: (payload: PatientRegisterPayload) =>
     apiRequest<ApiResponse>("api/auth/register/patient", {
       method: "POST",

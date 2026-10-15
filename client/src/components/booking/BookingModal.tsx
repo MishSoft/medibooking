@@ -1,17 +1,16 @@
 import { useState } from "react";
-import { addMonths, endOfMonth, startOfToday } from "date-fns";
+import { addMonths, isWeekend, startOfToday } from "date-fns";
+import { useQueryClient } from "@tanstack/react-query";
+import { ApiError } from "../../api/client";
 import { BadgeCheckIcon } from "../../assets/icons/Icons";
-import {
-  useAppointments,
-  useBookAppointment,
-} from "../../hooks/useAppointments";
-import { getMockSlots, hasWorkingHours } from "../../mocks/slots";
-import { AppointmentStatus } from "../../types/appointment";
+import { useBookAppointment } from "../../hooks/useAppointments";
+import { doctorsQueryKey, useDoctorSlots } from "../../hooks/useDoctors";
 import type { Doctor } from "../../types/doctor";
 import Button from "../../shared/ui/Button";
 import DatePicker from "../../shared/ui/DatePicker";
 import FieldError from "../../shared/ui/FieldError";
 import Modal from "../../shared/ui/Modal";
+import QueryState from "../../shared/ui/QueryState";
 import { getDoctorName } from "../doctors/DoctorCard";
 import BookingSummary from "./BookingSummary";
 import TimeSlotPicker from "./TimeSlotPicker";
@@ -21,6 +20,7 @@ type BookingModalProps = {
   onClose: () => void;
 };
 
+// Matches MAX_MONTHS_AHEAD in server/src/config/booking.ts
 const BOOKING_WINDOW_MONTHS = 2;
 
 function BookingModal({ doctor, onClose }: BookingModalProps) {
@@ -28,28 +28,21 @@ function BookingModal({ doctor, onClose }: BookingModalProps) {
   const [slot, setSlot] = useState<Date>();
   const [isConfirmed, setIsConfirmed] = useState(false);
 
-  const today = startOfToday();
-  const lastBookableDay = endOfMonth(addMonths(today, BOOKING_WINDOW_MONTHS));
-  const { data: appointments = [] } = useAppointments();
+  const queryClient = useQueryClient();
   const bookAppointment = useBookAppointment();
+  const {
+    data: slots = [],
+    isPending: isSlotsPending,
+    error: slotsError,
+  } = useDoctorSlots(doctor?.id, date);
 
-  // Slots already taken by this patient's scheduled visits with the doctor
-  const bookedTimes = new Set(
-    appointments
-      .filter(
-        (item) =>
-          item.doctor.id === doctor?.id &&
-          item.status === AppointmentStatus.SCHEDULED,
-      )
-      .map((item) => Date.parse(item.startsAt)),
-  );
-  const slots =
-    doctor && date
-      ? getMockSlots(doctor.id, date).map((item) => ({
-          ...item,
-          available: item.available && !bookedTimes.has(item.start.getTime()),
-        }))
-      : [];
+  const today = startOfToday();
+  const lastBookableDay = addMonths(today, BOOKING_WINDOW_MONTHS);
+
+  const refreshSlots = () =>
+    queryClient.invalidateQueries({
+      queryKey: [...doctorsQueryKey, doctor?.id, "slots"],
+    });
 
   const handleClose = () => {
     setDate(undefined);
@@ -62,13 +55,31 @@ function BookingModal({ doctor, onClose }: BookingModalProps) {
   const handleDateSelect = (nextDate: Date | undefined) => {
     setDate(nextDate);
     setSlot(undefined);
+    bookAppointment.reset();
+  };
+
+  const handleSlotSelect = (start: Date) => {
+    setSlot(start);
+    bookAppointment.reset();
   };
 
   const handleConfirm = () => {
     if (!doctor || !slot) return;
     bookAppointment.mutate(
       { doctor, startsAt: slot.toISOString() },
-      { onSuccess: () => setIsConfirmed(true) },
+      {
+        onSuccess: () => {
+          setIsConfirmed(true);
+          void refreshSlots();
+        },
+        onError: (error) => {
+          // Someone else took the slot meanwhile — show fresh availability
+          if (error instanceof ApiError && error.status === 409) {
+            setSlot(undefined);
+            void refreshSlots();
+          }
+        },
+      },
     );
   };
 
@@ -119,7 +130,7 @@ function BookingModal({ doctor, onClose }: BookingModalProps) {
             disabled={[
               { before: today },
               { after: lastBookableDay },
-              (day) => !hasWorkingHours(day),
+              isWeekend,
             ]}
             endMonth={lastBookableDay}
             onSelect={handleDateSelect}
@@ -131,7 +142,13 @@ function BookingModal({ doctor, onClose }: BookingModalProps) {
         <div className="space-y-4">
           <BookingSummary doctor={doctor} start={slot} />
           {date ? (
-            <TimeSlotPicker onSelect={setSlot} selected={slot} slots={slots} />
+            <QueryState error={slotsError} isPending={isSlotsPending}>
+              <TimeSlotPicker
+                onSelect={handleSlotSelect}
+                selected={slot}
+                slots={slots}
+              />
+            </QueryState>
           ) : (
             <p className="text-body-sm text-on-surface-variant">
               Pick a date to see available time slots.
