@@ -165,16 +165,29 @@ export const getMeController = async (req: Request, res: Response) => {
 };
 
 
-export const logoutController = async (re: Request, res: Response) => {
+
+export const logoutController = async (req: Request, res: Response) => {
   try {
+    const { jti, exp } = req.user ?? {};
+
+    if (!jti || !exp) {
+      return res.status(400).json({
+        success: false,
+        message: "Token is missing required claims",
+      });
+    }
+
+    await AuthService.logout(jti, exp);
+
     return res.status(200).json({
       success: true,
-      message: "Successfully loged out."
-    })
+      message: "Successfully logged out.",
+    });
   } catch (error) {
-    return res.status(400).json({
+    return res.status(500).json({
       success: false,
-      message: "Logout Error"
-    })
+      message: error instanceof Error ? error.message : "Logout failed",
+    });
   }
-}
+};
+
