@@ -335,6 +335,131 @@ const options: swaggerJsdoc.Options = {
           },
         },
       },
+
+      "/api/auth/register/doctor": {
+        post: {
+          summary: "ექიმის რეგისტრაცია",
+          description:
+            "ექიმის რეგისტრაცია სისტემაში პირადი მონაცემებით, ლიცენზიის ნომრითა და კლინიკის ID-ით.",
+          tags: ["Auth"],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: [
+                    "email",
+                    "password",
+                    "firstName",
+                    "lastName",
+                    "phone",
+                    "personalId",
+                    "licenseNo",
+                    "primarySpecialty",
+                    "yearsOfPractice",
+                    "emergencyPhone",
+                    "city",
+                    "clinicId",
+                  ],
+                  properties: {
+                    email: {
+                      type: "string",
+                      format: "email",
+                      example: "doctor@example.com",
+                    },
+                    password: {
+                      type: "string",
+                      minLength: 6,
+                      example: "password123",
+                    },
+                    firstName: {
+                      type: "string",
+                      minLength: 2,
+                      example: "გიორგი",
+                    },
+                    lastName: {
+                      type: "string",
+                      minLength: 2,
+                      example: "გიორგაძე",
+                    },
+                    phone: {
+                      type: "string",
+                      minLength: 6,
+                      example: "599123456",
+                    },
+                    role: {
+                      type: "string",
+                      enum: ["DOCTOR"],
+                      default: "DOCTOR",
+                      example: "DOCTOR",
+                    },
+                    personalId: {
+                      type: "string",
+                      minLength: 1,
+                      example: "01001011111",
+                    },
+                    licenseNo: {
+                      type: "string",
+                      minLength: 1,
+                      example: "MED-123456",
+                    },
+                    primarySpecialty: {
+                      type: "string",
+                      minLength: 1,
+                      example: "კარდიოლოგი",
+                    },
+                    yearsOfPractice: {
+                      type: "number",
+                      minimum: 0,
+                      example: 8,
+                    },
+                    emergencyPhone: {
+                      type: "string",
+                      minLength: 1,
+                      example: "599987654",
+                    },
+                    city: {
+                      type: "string",
+                      minLength: 1,
+                      example: "თბილისი",
+                    },
+                    clinicId: {
+                      type: "string",
+                      format: "uuid",
+                      example: "550e8400-e29b-41d4-a716-446655440000",
+                      description: "არსებული კლინიკის უნიკალური ID",
+                    },
+                    gender: {
+                      type: "string",
+                      enum: ["MALE", "FEMALE"],
+                      example: "MALE",
+                    },
+                    birthDate: {
+                      type: "string",
+                      format: "date",
+                      example: "1990-05-15",
+                    },
+                    bio: {
+                      type: "string",
+                      example: "8 წლიანი გამოცდილების მქონე კარდიოლოგი.",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            201: {
+              description: "ექიმი წარმატებით დარეგისტრირდა",
+            },
+            400: {
+              description:
+                "ვალიდაციის შეცდომა, გამოყენებული ელ.ფოსტა ან ლიცენზიის ნომერი, ან არარსებული კლინიკა",
+            },
+          },
+        },
+      },
     },
   },
   apis: [],

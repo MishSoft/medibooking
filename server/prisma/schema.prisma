@@ -82,6 +82,7 @@ model DoctorProfile {
 
   appointments  Appointment[]
   prescriptions Prescription[]
+  schedule      DoctorSchedule?
 }
 
 model Clinic {
@@ -103,15 +104,18 @@ model Clinic {
 }
 
 model Appointment {
-  id        String            @id @default(uuid())
-  patientId String
-  patient   User              @relation(fields: [patientId], references: [id], onDelete: Cascade, map: "Appointment_patient_fkey_custom")
-  doctorId  String
-  doctor    DoctorProfile     @relation(fields: [doctorId], references: [id], onDelete: Cascade, map: "Appointment_doctor_fkey_custom")
-  startAt   DateTime
-  status    AppointmentStatus @default(SCHEDULED)
-  notes     String?
-  createdAt DateTime          @default(now())
+  id                 String            @id @default(uuid())
+  patientId          String
+  patient            User              @relation(fields: [patientId], references: [id], onDelete: Cascade, map: "Appointment_patient_fkey_custom")
+  doctorId           String
+  doctor             DoctorProfile     @relation(fields: [doctorId], references: [id], onDelete: Cascade, map: "Appointment_doctor_fkey_custom")
+  startAt            DateTime
+  status             AppointmentStatus @default(SCHEDULED)
+  notes              String?
+  createdAt          DateTime          @default(now())
+  rescheduledFrom    DateTime?
+  cancelledAt        DateTime?
+  cancellationReason String?           @db.VarChar(200)
 
   // Double-booking is prevented by the partial unique index
   // "Appointment_doctor_active_slot_key" (SCHEDULED only) — see migration
@@ -137,4 +141,13 @@ model Prescription {
 model RevokedToken {
   jti       String   @id
   expiresAt DateTime
+}
+
+model DoctorSchedule {
+  doctorId    String        @id
+  doctor      DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  workingDays Int[]
+  startTime   String
+  endTime     String
+  slotMinutes Int
 }
