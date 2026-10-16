@@ -26,6 +26,9 @@ export const formatWorkingDays = (days: Weekday[]) => {
 export const formatWorkingHours = ({ startTime, endTime }: DoctorSchedule) =>
   `${startTime}–${endTime}`;
 
+// 0.4567 → "46%"
+export const formatPercent = (value: number) => `${Math.round(value * 100)}%`;
+
 // "HH:mm" on the given day
 export const toTime = (time: string, day: Date) => parse(time, "HH:mm", day);
 
