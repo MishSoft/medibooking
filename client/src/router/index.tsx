@@ -9,6 +9,13 @@ import DashboardLayout from '../layouts/DashboardLayout';
 import PatientDashboardPage from '../pages/dashboards/patient';
 import DoctorDashboardPage from '../pages/dashboards/doctor';
 import { queryClient, postsQueryOptions } from './queryClient';
+import { Role } from '../types/enums';
+
+// Signed-in patients skip auth pages; loaders also run on back/forward navigation
+const redirectSignedInPatient = () =>
+  authStorage.getToken() && authStorage.getUser()?.role === Role.PATIENT
+    ? redirect('/dashboard/patient')
+    : null;
 
 export const router = createBrowserRouter([
   {
@@ -21,10 +28,12 @@ export const router = createBrowserRouter([
   {
     path: '/path-selector',
     element: <PathSelectorPage />,
+    loader: redirectSignedInPatient,
   },
   {
     path: '/register-patient',
     element: <PatientRegistrationPage />,
+    loader: redirectSignedInPatient,
   },
   {
     path: '/register-clinic',

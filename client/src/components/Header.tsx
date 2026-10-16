@@ -3,6 +3,13 @@ import { useNavigate } from "react-router";
 import { authApi } from "../api/auth.api";
 import { authStorage } from "../api/auth.storage";
 import { PractitionerSignInIcon } from "../assets/icons/Icons";
+import { Role } from "../types/enums";
+
+const roleLabels: Record<Role, string> = {
+  [Role.PATIENT]: "Patient",
+  [Role.DOCTOR]: "Doctor",
+  [Role.CLINIC_ADMIN]: "Clinic",
+};
 
 type HeaderProps = {
   role?: string;
@@ -12,6 +19,11 @@ function Header({ role = "Patient" }: HeaderProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isSignedIn = !!authStorage.getToken();
+  const storedRole = authStorage.getUser()?.role;
+  // Badge is hidden for signed-out visitors
+  const roleLabel = isSignedIn
+    ? (storedRole && roleLabels[storedRole]) || role
+    : null;
 
   const handleSignOut = async () => {
     // Revoke the token on the server; sign out locally even if this fails
@@ -32,10 +44,12 @@ function Header({ role = "Patient" }: HeaderProps) {
       </span>
 
       <div className="flex items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-md border border-surface-container-high bg-surface-container-low px-2 py-1 text-label-md text-on-surface">
-          <span className="text-primary">ROLE</span>
-          {role}
-        </span>
+        {roleLabel && (
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-surface-container-high bg-surface-container-low px-2 py-1 text-label-md text-on-surface">
+            <span className="text-primary">ROLE</span>
+            {roleLabel}
+          </span>
+        )}
         <span className="rounded-md border border-surface-container-high bg-surface-container-low px-2 py-1 text-label-md text-on-surface-variant">
           EN
         </span>
