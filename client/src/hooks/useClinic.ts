@@ -4,6 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { format } from "date-fns";
 import {
   clinicApi,
   type CancelAppointmentPayload,
@@ -27,6 +28,18 @@ export function useClinicAppointments(filters: ClinicAppointmentsFilters = {}) {
     queryFn: () => clinicApi.appointments(filters),
     // Keep the current list visible while the next filter result loads
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useClinicDoctorSlots(doctorId: string, date?: Date) {
+  const day = date ? format(date, "yyyy-MM-dd") : "";
+
+  return useQuery({
+    queryKey: [...clinicQueryKey, "slots", doctorId, day],
+    queryFn: () => clinicApi.slots(doctorId, day),
+    enabled: !!date,
+    // Availability changes as patients book — keep it fresh
+    staleTime: 30 * 1000,
   });
 }
 

@@ -8,6 +8,7 @@ import {
   subDays,
 } from "date-fns";
 import { AppointmentStatus } from "../types/appointment";
+import type { TimeSlot } from "../types/booking";
 import type {
   ClinicAppointment,
   ClinicDoctor,
@@ -167,6 +168,30 @@ const generateAppointments = (): ClinicAppointment[] => {
 };
 
 export const mockClinicAppointments: ClinicAppointment[] = generateAppointments();
+
+// Mirrors GET api/doctors/:id/slots — past and booked slots are unavailable
+export const computeDoctorSlots = (doctorId: string, date: Date): TimeSlot[] => {
+  const doctor = mockClinicDoctors.find((item) => item.id === doctorId);
+  if (!doctor || !isWorkingDay(doctor.schedule, date)) return [];
+
+  const { schedule } = doctor;
+  const dayStart = toTime(schedule.startTime, date);
+  const now = new Date();
+  const taken = new Set(
+    mockClinicAppointments
+      .filter(
+        (apt) =>
+          apt.doctor.id === doctorId &&
+          apt.status !== AppointmentStatus.CANCELLED,
+      )
+      .map((apt) => new Date(apt.startsAt).getTime()),
+  );
+
+  return Array.from({ length: getSlotsPerDay(schedule) }, (_, index) => {
+    const start = addMinutes(dayStart, index * schedule.slotMinutes);
+    return { start, available: start > now && !taken.has(start.getTime()) };
+  });
+};
 
 const isInRange = (iso: string, { from, to }: DateRange) => {
   const date = new Date(iso);

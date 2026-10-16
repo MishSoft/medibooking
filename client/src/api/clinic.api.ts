@@ -1,6 +1,9 @@
+import { parse } from "date-fns";
 import { mockDelay } from "../mocks/delay";
+import type { TimeSlot } from "../types/booking";
 import {
   computeClinicStats,
+  computeDoctorSlots,
   mockClinicAppointments,
   mockClinicDoctors,
 } from "../mocks/clinic";
@@ -65,10 +68,22 @@ export const clinicApi = {
   }: RescheduleAppointmentPayload): Promise<ClinicAppointment> => {
     await mockDelay();
     const appointment = findAppointment(id);
+    const isTaken = !computeDoctorSlots(
+      appointment.doctor.id,
+      new Date(startsAt),
+    ).some(
+      (slot) =>
+        slot.available && slot.start.getTime() === new Date(startsAt).getTime(),
+    );
+    if (isTaken) throw new Error("This slot is no longer available.");
+
     // Keep the very first slot when an appointment is moved more than once
     appointment.rescheduledFrom ??= appointment.startsAt;
     appointment.startsAt = startsAt;
+    // Rebooking a cancelled appointment makes it active again
     appointment.status = AppointmentStatus.SCHEDULED;
+    appointment.cancelledAt = undefined;
+    appointment.cancellationReason = undefined;
     return { ...appointment };
   },
   cancel: async ({
@@ -91,6 +106,11 @@ export const clinicApi = {
     if (!doctor) throw new Error("Doctor not found.");
     doctor.schedule = schedule;
     return { ...doctor };
+  },
+  // date: "yyyy-MM-dd"; maps to the existing GET api/doctors/:id/slots
+  slots: async (doctorId: string, date: string): Promise<TimeSlot[]> => {
+    await mockDelay();
+    return computeDoctorSlots(doctorId, parse(date, "yyyy-MM-dd", new Date()));
   },
   stats: async (range: DateRange): Promise<ClinicStats> => {
     await mockDelay();
