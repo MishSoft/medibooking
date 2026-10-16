@@ -8,6 +8,7 @@ import DoctorRegistrationPage from '../pages/register-doctor';
 import DashboardLayout from '../layouts/DashboardLayout';
 import PatientDashboardPage from '../pages/dashboards/patient';
 import DoctorDashboardPage from '../pages/dashboards/doctor';
+import ClinicDashboardPage from '../pages/dashboards/clinic';
 import { queryClient, postsQueryOptions } from './queryClient';
 import { Role } from '../types/enums';
 
@@ -16,6 +17,12 @@ const redirectSignedInPatient = () =>
   authStorage.getToken() && authStorage.getUser()?.role === Role.PATIENT
     ? redirect('/dashboard/patient')
     : null;
+
+// Only signed-in users with the given role may open the page; everyone else signs in
+const requireRole = (role: Role) => () =>
+  authStorage.getToken() && authStorage.getUser()?.role === role
+    ? null
+    : redirect('/path-selector');
 
 export const router = createBrowserRouter([
   {
@@ -50,13 +57,16 @@ export const router = createBrowserRouter([
       {
         path: 'patient',
         element: <PatientDashboardPage />,
-        // Signed-out visitors go back to sign in
-        loader: () =>
-          authStorage.getToken() ? null : redirect('/path-selector'),
+        loader: requireRole(Role.PATIENT),
       },
       {
         path: 'doctor',
         element: <DoctorDashboardPage />,
+      },
+      {
+        path: 'clinic',
+        element: <ClinicDashboardPage />,
+        loader: requireRole(Role.CLINIC_ADMIN),
       },
     ],
   },

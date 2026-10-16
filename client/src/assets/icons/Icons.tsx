@@ -407,3 +407,21 @@ export function ClinicCalendarIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function ChartBarIcon(props: IconProps) {
+  return (
+    <svg
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      {...props}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3.75 20.25h16.5M6.75 16.5v-4.5m5.25 4.5V7.5m5.25 9v-6"
+      />
+    </svg>
+  );
+}
