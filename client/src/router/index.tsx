@@ -12,17 +12,31 @@ import ClinicDashboardPage from '../pages/dashboards/clinic';
 import { queryClient, postsQueryOptions } from './queryClient';
 import { Role } from '../types/enums';
 
-// Signed-in patients skip auth pages; loaders also run on back/forward navigation
-const redirectSignedInPatient = () =>
-  authStorage.getToken() && authStorage.getUser()?.role === Role.PATIENT
-    ? redirect('/dashboard/patient')
-    : null;
+const dashboardPathByRole: Record<Role, string> = {
+  [Role.PATIENT]: '/dashboard/patient',
+  [Role.DOCTOR]: '/dashboard/doctor',
+  [Role.CLINIC_ADMIN]: '/dashboard/clinic',
+};
 
-// Only signed-in users with the given role may open the page; everyone else signs in
-const requireRole = (role: Role) => () =>
-  authStorage.getToken() && authStorage.getUser()?.role === role
+const getSignedInRole = () =>
+  authStorage.getToken() ? authStorage.getUser()?.role : undefined;
+
+// Signed-in patients and clinic admins skip auth pages; loaders also run on back/forward navigation
+const redirectSignedInUser = () => {
+  const role = getSignedInRole();
+  return role === Role.PATIENT || role === Role.CLINIC_ADMIN
+    ? redirect(dashboardPathByRole[role])
+    : null;
+};
+
+// Signed-out visitors sign in; signed-in users with another role go to their own dashboard
+const requireRole = (role: Role) => () => {
+  const signedInRole = getSignedInRole();
+  if (!signedInRole) return redirect('/path-selector');
+  return signedInRole === role
     ? null
-    : redirect('/path-selector');
+    : redirect(dashboardPathByRole[signedInRole]);
+};
 
 export const router = createBrowserRouter([
   {
@@ -35,12 +49,12 @@ export const router = createBrowserRouter([
   {
     path: '/path-selector',
     element: <PathSelectorPage />,
-    loader: redirectSignedInPatient,
+    loader: redirectSignedInUser,
   },
   {
     path: '/register-patient',
     element: <PatientRegistrationPage />,
-    loader: redirectSignedInPatient,
+    loader: redirectSignedInUser,
   },
   {
     path: '/register-clinic',
