@@ -20,8 +20,10 @@ function Header({ role = "Patient" }: HeaderProps) {
   const queryClient = useQueryClient();
   const isSignedIn = !!authStorage.getToken();
   const storedRole = authStorage.getUser()?.role;
-  // Stored user's role wins; the prop covers signed-out pages
-  const roleLabel = (isSignedIn && storedRole && roleLabels[storedRole]) || role;
+  // Badge is hidden for signed-out visitors
+  const roleLabel = isSignedIn
+    ? (storedRole && roleLabels[storedRole]) || role
+    : null;
 
   const handleSignOut = async () => {
     // Revoke the token on the server; sign out locally even if this fails
@@ -42,10 +44,12 @@ function Header({ role = "Patient" }: HeaderProps) {
       </span>
 
       <div className="flex items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-md border border-surface-container-high bg-surface-container-low px-2 py-1 text-label-md text-on-surface">
-          <span className="text-primary">ROLE</span>
-          {roleLabel}
-        </span>
+        {roleLabel && (
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-surface-container-high bg-surface-container-low px-2 py-1 text-label-md text-on-surface">
+            <span className="text-primary">ROLE</span>
+            {roleLabel}
+          </span>
+        )}
         <span className="rounded-md border border-surface-container-high bg-surface-container-low px-2 py-1 text-label-md text-on-surface-variant">
           EN
         </span>
