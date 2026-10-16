@@ -25,18 +25,14 @@ function PatientHistorySection() {
   return (
     <QueryState error={error} isPending={isPending}>
       <div className="space-y-4">
-        <div className="relative">
-          <SearchIcon
-            aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-on-surface-variant"
-          />
-          <Input
-            placeholder="Search by clinic or specialty..."
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
+        <Input
+          label="Search patient history"
+          leadingElement={<SearchIcon aria-hidden="true" className="h-4 w-4" />}
+          placeholder="Search by clinic or specialty..."
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
 
         {filteredAppointments.length > 0 ? (
           <div className="space-y-3">
