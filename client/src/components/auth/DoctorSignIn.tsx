@@ -12,7 +12,9 @@ import { doctorSignInSchema } from "../../schemas/signIn.schema";
 import type { LoginInput } from "../../schemas/auth.schema";
 import FieldError from "../../shared/ui/FieldError";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { useLogin } from "../../hooks/useLogin";
+import { authStorage } from "../../api/auth.storage";
 
 const fieldBorder = (hasError: boolean) =>
   hasError ? "border-rose-400/60" : "border-white/5";
@@ -20,6 +22,7 @@ const fieldBorder = (hasError: boolean) =>
 function DoctorSignIn() {
   const [loginError, setLoginError] = useState("");
   const login = useLogin();
+  const navigate = useNavigate();
 
   const {
     register,
@@ -31,7 +34,13 @@ function DoctorSignIn() {
     setLoginError("");
     try {
       const response = await login.mutateAsync(data);
-      console.log("Doctor logged in:", response);
+
+      if (!response.data) {
+        throw new Error("Login failed.");
+      }
+
+      authStorage.setSession(response.data.token, response.data.user);
+      navigate("/dashboard/doctor", { replace: true });
     } catch (error) {
       setLoginError(error instanceof Error ? error.message : "Login failed.");
     }

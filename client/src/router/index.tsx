@@ -21,12 +21,10 @@ const dashboardPathByRole: Record<Role, string> = {
 const getSignedInRole = () =>
   authStorage.getToken() ? authStorage.getUser()?.role : undefined;
 
-// Signed-in patients and clinic admins skip auth pages; loaders also run on back/forward navigation
+// Signed-in users skip auth pages; loaders also run on back/forward navigation
 const redirectSignedInUser = () => {
   const role = getSignedInRole();
-  return role === Role.PATIENT || role === Role.CLINIC_ADMIN
-    ? redirect(dashboardPathByRole[role])
-    : null;
+  return role ? redirect(dashboardPathByRole[role]) : null;
 };
 
 // Signed-out visitors sign in; signed-in users with another role go to their own dashboard
@@ -76,6 +74,7 @@ export const router = createBrowserRouter([
       {
         path: 'doctor',
         element: <DoctorDashboardPage />,
+        loader: requireRole(Role.DOCTOR),
       },
       {
         path: 'clinic',
