@@ -5,7 +5,7 @@ import { getPastAppointments } from "../../utils/appointments";
 import Input from "../../shared/ui/Input";
 import QueryState from "../../shared/ui/QueryState";
 import EmptyState from "../../shared/ui/EmptyState";
-import PatientVisitCard from "./PatientVisitCard";
+import PatientVisitCard, { getPatientName } from "./PatientVisitCard";
 
 function PatientHistorySection() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -13,30 +13,22 @@ function PatientHistorySection() {
 
   const pastAppointments = getPastAppointments(data);
 
-  const filteredAppointments = pastAppointments.filter((apt) => {
-    const searchLower = searchQuery.toLowerCase();
-    // Filter by clinic name or specialty
-    return (
-      apt.doctor.clinic.name.toLowerCase().includes(searchLower) ||
-      apt.doctor.specialty.toLowerCase().includes(searchLower)
-    );
-  });
+  const searchLower = searchQuery.trim().toLowerCase();
+  const filteredAppointments = pastAppointments.filter((apt) =>
+    getPatientName(apt.patient).toLowerCase().includes(searchLower),
+  );
 
   return (
     <QueryState error={error} isPending={isPending}>
       <div className="space-y-4">
-        <div className="relative">
-          <SearchIcon
-            aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-on-surface-variant"
-          />
-          <Input
-            placeholder="Search by clinic or specialty..."
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
+        <Input
+          label="Search patient history"
+          leadingElement={<SearchIcon aria-hidden="true" className="h-4 w-4" />}
+          placeholder="Search by patient name..."
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
 
         {filteredAppointments.length > 0 ? (
           <div className="space-y-3">

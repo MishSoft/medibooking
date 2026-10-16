@@ -1,15 +1,16 @@
 import { format } from "date-fns";
-import { ClinicBuildingIcon } from "../../assets/icons/Icons";
-import type { Appointment } from "../../types/appointment";
-import Tag from "../../shared/ui/Tag";
+import type { Appointment, AppointmentPatient } from "../../types/appointment";
 import AppointmentStatusBadge from "../appointments/AppointmentStatusBadge";
+
+export const getPatientName = (patient?: AppointmentPatient) =>
+  patient ? `${patient.firstName} ${patient.lastName}` : "Unknown patient";
 
 type PatientVisitCardProps = {
   appointment: Appointment;
 };
 
 function PatientVisitCard({ appointment }: PatientVisitCardProps) {
-  const { doctor, status, notes } = appointment;
+  const { patient, status, notes } = appointment;
   const startsAt = new Date(appointment.startsAt);
 
   return (
@@ -24,16 +25,7 @@ function PatientVisitCard({ appointment }: PatientVisitCardProps) {
       </div>
 
       <div className="space-y-1.5">
-        <div className="flex flex-wrap items-center gap-2 text-body-sm text-on-surface-variant">
-          <Tag tone="secondary">{doctor.specialty}</Tag>
-          <span className="inline-flex items-center gap-1.5">
-            <ClinicBuildingIcon
-              aria-hidden="true"
-              className="h-4 w-4 text-primary"
-            />
-            {doctor.clinic.name}
-          </span>
-        </div>
+        <h3 className="text-headline-sm">{getPatientName(patient)}</h3>
         {notes && (
           <p className="text-body-sm text-on-surface">
             <span className="font-semibold">Notes:</span> {notes}
