@@ -38,7 +38,13 @@ function ClinicDashboardPage() {
   const activeTabMeta = clinicTabs.find((tab) => tab.id === activeTab)!;
 
   const sections: Record<ClinicTabId, ReactNode> = {
-    doctors: <ClinicDoctorsSection />,
+    doctors: (
+      <ClinicDoctorsSection
+        onViewSchedule={(doctor) =>
+          setSearchParams({ tab: "schedules", doctor: doctor.id })
+        }
+      />
+    ),
     schedules: <ClinicScheduleSection />,
     changes: <AppointmentChangesSection />,
     reports: <ClinicReportsSection />,
