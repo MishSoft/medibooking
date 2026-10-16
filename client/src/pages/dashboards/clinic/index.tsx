@@ -45,7 +45,16 @@ function ClinicDashboardPage() {
         }
       />
     ),
-    schedules: <ClinicScheduleSection />,
+    schedules: (
+      <ClinicScheduleSection
+        doctorId={searchParams.get("doctor") ?? undefined}
+        onDoctorChange={(doctorId) =>
+          setSearchParams(
+            doctorId ? { tab: "schedules", doctor: doctorId } : { tab: "schedules" },
+          )
+        }
+      />
+    ),
     changes: <AppointmentChangesSection />,
     reports: <ClinicReportsSection />,
   };

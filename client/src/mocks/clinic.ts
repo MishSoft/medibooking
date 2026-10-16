@@ -2,9 +2,7 @@
 import {
   addDays,
   addMinutes,
-  differenceInMinutes,
   eachDayOfInterval,
-  parse,
   setHours,
   startOfToday,
   subDays,
@@ -17,8 +15,8 @@ import type {
   DateRange,
   DoctorSchedule,
   PatientSummary,
-  Weekday,
 } from "../types/clinic";
+import { getSlotsPerDay, isWorkingDay, toTime } from "../utils/clinic";
 import { mockClinics } from "./doctors";
 
 const clinic = mockClinics[0];
@@ -112,14 +110,6 @@ const cancellationReasons = [
   "Scheduling conflict",
 ];
 
-const toTime = (time: string, day: Date) => parse(time, "HH:mm", day);
-
-export const getSlotsPerDay = ({ startTime, endTime, slotMinutes }: DoctorSchedule) =>
-  Math.floor(
-    differenceInMinutes(toTime(endTime, today), toTime(startTime, today)) /
-      slotMinutes,
-  );
-
 // Deterministic spread of appointments 30 days back and 30 days ahead
 const generateAppointments = (): ClinicAppointment[] => {
   const appointments: ClinicAppointment[] = [];
@@ -131,7 +121,7 @@ const generateAppointments = (): ClinicAppointment[] => {
   days.forEach((day, dayIndex) => {
     mockClinicDoctors.forEach((doctor, doctorIndex) => {
       const { schedule } = doctor;
-      if (!schedule.workingDays.includes(day.getDay() as Weekday)) return;
+      if (!isWorkingDay(schedule, day)) return;
 
       const slotsPerDay = getSlotsPerDay(schedule);
       const count = 2 + ((dayIndex + doctorIndex * 3) % 4);
@@ -187,7 +177,7 @@ const countWorkingDays = (schedule: DoctorSchedule, { from, to }: DateRange) => 
   const end = subDays(new Date(to), 1);
   if (end < new Date(from)) return 0;
   return eachDayOfInterval({ start: new Date(from), end }).filter((day) =>
-    schedule.workingDays.includes(day.getDay() as Weekday),
+    isWorkingDay(schedule, day),
   ).length;
 };
 

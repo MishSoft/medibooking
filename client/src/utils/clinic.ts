@@ -1,9 +1,10 @@
+import { differenceInMinutes, parse, startOfToday } from "date-fns";
 import type { DoctorSchedule, Weekday } from "../types/clinic";
 
-const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+export const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 // Monday-first order, matching the calendar (weekStartsOn: 1)
-const weekOrder: Weekday[] = [1, 2, 3, 4, 5, 6, 0];
+export const weekOrder: Weekday[] = [1, 2, 3, 4, 5, 6, 0];
 
 // [1,2,3,4,5] → "Mon–Fri", [1,3,5] → "Mon, Wed, Fri"
 export const formatWorkingDays = (days: Weekday[]) => {
@@ -24,3 +25,22 @@ export const formatWorkingDays = (days: Weekday[]) => {
 
 export const formatWorkingHours = ({ startTime, endTime }: DoctorSchedule) =>
   `${startTime}–${endTime}`;
+
+// "HH:mm" on the given day
+export const toTime = (time: string, day: Date) => parse(time, "HH:mm", day);
+
+export const isWorkingDay = (schedule: DoctorSchedule, date: Date) =>
+  schedule.workingDays.includes(date.getDay() as Weekday);
+
+export const getSlotsPerDay = ({
+  startTime,
+  endTime,
+  slotMinutes,
+}: DoctorSchedule) => {
+  const today = startOfToday();
+  const minutes = differenceInMinutes(
+    toTime(endTime, today),
+    toTime(startTime, today),
+  );
+  return Math.max(0, Math.floor(minutes / slotMinutes));
+};
