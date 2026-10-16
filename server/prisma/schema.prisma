@@ -112,6 +112,7 @@ model Appointment {
   startAt            DateTime
   status             AppointmentStatus @default(SCHEDULED)
   notes              String?
+  diagnosis          String?
   createdAt          DateTime          @default(now())
   rescheduledFrom    DateTime?
   cancelledAt        DateTime?

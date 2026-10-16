@@ -9,12 +9,14 @@ import {
 
 const router = Router();
 
+// Patient: create an appointment
 router.post(
   "/appointments",
   authenticate,
   authorize("PATIENT"),
   createAppointment,
 );
+
 
 router.get(
   "/appointments",
@@ -23,6 +25,7 @@ router.get(
   getDoctorAppointments,
 );
 
+// Patient: cancel their own appointment
 router.patch(
   "/appointments/:id/cancel",
   authenticate,
@@ -30,6 +33,7 @@ router.patch(
   cancelAppointment,
 );
 
+// Doctor: complete an appointment and optionally save notes
 router.patch(
   "/appointments/:id/status",
   authenticate,

@@ -54,3 +54,100 @@ export const generateDaySlots = (dayLocal: DateTime): DateTime[] => {
 
   return slots;
 };
+
+
+
+export interface ScheduleConfig {
+  workingDays: number[];
+  startTime: string;
+  endTime: string;
+  slotMinutes: number;
+}
+
+export const generateScheduleSlots = (
+  dayLocal: DateTime,
+  schedule: ScheduleConfig,
+): DateTime[] => {
+  const dayStart = dayLocal.startOf("day");
+
+  // Luxon weekday: Monday = 1, Sunday = 7
+  if (!schedule.workingDays.includes(dayStart.weekday)) {
+    return [];
+  }
+
+  const parseTime = (time: string) => {
+    const [hour, minute] = time.split(":").map(Number);
+
+    return { hour, minute };
+  };
+
+  const start = parseTime(schedule.startTime);
+  const end = parseTime(schedule.endTime);
+
+  let cursor = dayStart.set({
+    hour: start.hour,
+    minute: start.minute,
+    second: 0,
+    millisecond: 0,
+  });
+
+  const endTime = dayStart.set({
+    hour: end.hour,
+    minute: end.minute,
+    second: 0,
+    millisecond: 0,
+  });
+
+  const slots: DateTime[] = [];
+
+  while (cursor.plus({ minutes: schedule.slotMinutes }) <= endTime) {
+    slots.push(cursor);
+    cursor = cursor.plus({ minutes: schedule.slotMinutes });
+  }
+
+  return slots;
+};
+
+
+
+export const validateScheduledSlot = (
+  startLocal: DateTime,
+  schedule: ScheduleConfig,
+  nowLocal: DateTime = getClinicNow(),
+): string | null => {
+  if (!startLocal.isValid) {
+    return "Invalid appointment date.";
+  }
+
+  if (startLocal <= nowLocal) {
+    return "Appointments cannot be booked in the past.";
+  }
+
+  if (startLocal > nowLocal.plus({ months: MAX_MONTHS_AHEAD })) {
+    return "Appointments cannot be booked more than 2 months in advance.";
+  }
+
+  if (!schedule.workingDays.includes(startLocal.weekday)) {
+    return "The doctor does not work on this day.";
+  }
+
+  const [startHour, startMinute] = schedule.startTime.split(":").map(Number);
+
+  const [endHour, endMinute] = schedule.endTime.split(":").map(Number);
+
+  const scheduleStartMinutes = startHour * 60 + startMinute;
+  const scheduleEndMinutes = endHour * 60 + endMinute;
+  const appointmentMinutes = startLocal.hour * 60 + startLocal.minute;
+
+  if (
+    startLocal.second !== 0 ||
+    startLocal.millisecond !== 0 ||
+    appointmentMinutes < scheduleStartMinutes ||
+    appointmentMinutes + schedule.slotMinutes > scheduleEndMinutes ||
+    (appointmentMinutes - scheduleStartMinutes) % schedule.slotMinutes !== 0
+  ) {
+    return "The selected time does not match the doctor's schedule.";
+  }
+
+  return null;
+};

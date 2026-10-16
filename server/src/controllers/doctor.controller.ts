@@ -9,6 +9,8 @@ import {
   generateDaySlots,
   validateSlot,
   getClinicNow,
+  generateScheduleSlots,
+  MAX_MONTHS_AHEAD,
 } from "../config/booking";
 import { DateTime } from "luxon";
 export const getDoctorSpecialties = async (req: Request, res: Response) => {
@@ -118,42 +120,31 @@ export const getDoctors = async (req: Request, res: Response) => {
   }
 };
 
+
 export const getDoctorsSlots = async (req: Request, res: Response) => {
   try {
     const params = doctorSlotsParamsSchema.safeParse(req.params);
+
     if (!params.success) {
       return res.status(400).json({
         success: false,
-        message: "Wrong data",
+        message: "Invalid doctor ID.",
         error: params.error.format(),
       });
     }
 
     const query = doctorSlotsQuerySchema.safeParse(req.query);
+
     if (!query.success) {
       return res.status(400).json({
         success: false,
-        message: "Wrong data",
+        message: "Invalid date.",
         error: query.error.format(),
       });
     }
 
     const { id } = params.data;
     const { date } = query.data;
-
-    const foundDoc = await prisma.doctorProfile.findUnique({
-      where: { id },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!foundDoc) {
-      return res.status(404).json({
-        success: false,
-        message: "Can't find Doctor.",
-      });
-    }
 
     const dayLocal = DateTime.fromISO(date, {
       zone: CLINIC_TZ,
@@ -162,18 +153,47 @@ export const getDoctorsSlots = async (req: Request, res: Response) => {
     if (!dayLocal.isValid || dayLocal.toISODate() !== date) {
       return res.status(400).json({
         success: false,
-        message: "Wrong date type.",
+        message: "Date must use YYYY-MM-DD format.",
       });
     }
 
-    const nowLocal = getClinicNow();
+    const doctor = await prisma.doctorProfile.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        schedule: {
+          select: {
+            workingDays: true,
+            startTime: true,
+            endTime: true,
+            slotMinutes: true,
+          },
+        },
+      },
+    });
+
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: "Doctor not found.",
+      });
+    }
+
+    // Doctor without a configured schedule has no available slots.
+    if (!doctor.schedule) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+      });
+    }
+
     const dayStart = dayLocal.startOf("day").toUTC().toJSDate();
     const dayEnd = dayLocal.plus({ days: 1 }).startOf("day").toUTC().toJSDate();
 
     const appointments = await prisma.appointment.findMany({
       where: {
         doctorId: id,
-        status: "SCHEDULED",
+        status: { not: "CANCELLED" },
         startAt: {
           gte: dayStart,
           lt: dayEnd,
@@ -188,15 +208,24 @@ export const getDoctorsSlots = async (req: Request, res: Response) => {
       appointments.map((appointment) => appointment.startAt.getTime()),
     );
 
-    const slots = generateDaySlots(dayLocal).map((slot) => {
-      const validationError = validateSlot(slot, nowLocal);
-      const slotTime = slot.toUTC().toMillis();
+    const nowLocal = getClinicNow();
+    const maxBookingDate = nowLocal.plus({ months: MAX_MONTHS_AHEAD });
 
-      return {
-        start: slot.toUTC().toISO(),
-        available: validationError === null && !bookedTimes.has(slotTime),
-      };
-    });
+    const slots = generateScheduleSlots(dayLocal, doctor.schedule).map(
+      (slot) => {
+        const slotUtc = slot.toUTC();
+        const slotMillis = slotUtc.toMillis();
+
+        const isFuture = slot > nowLocal;
+        const isWithinBookingWindow = slot <= maxBookingDate;
+        const isBooked = bookedTimes.has(slotMillis);
+
+        return {
+          start: slotUtc.toISO(),
+          available: isFuture && isWithinBookingWindow && !isBooked,
+        };
+      },
+    );
 
     return res.status(200).json({
       success: true,
@@ -211,3 +240,4 @@ export const getDoctorsSlots = async (req: Request, res: Response) => {
     });
   }
 };
+

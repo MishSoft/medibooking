@@ -1,22 +1,15 @@
 import { Request, Response } from "express";
 import { prisma } from "../db/prisma";
 
+
 export const getDoctorPrescriptions = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
-    const { doctorId } = req.query;
 
     if (!userId) {
       return res.status(401).json({
         success: false,
-        message: "Unauthorized",
-      });
-    }
-
-    if (typeof doctorId !== "string" || !doctorId.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: "doctorId query parameter is required",
+        message: "Authorization is required.",
       });
     }
 
@@ -28,14 +21,7 @@ export const getDoctorPrescriptions = async (req: Request, res: Response) => {
     if (!doctor) {
       return res.status(403).json({
         success: false,
-        message: "Doctor profile not found",
-      });
-    }
-
-    if (doctor.id !== doctorId) {
-      return res.status(403).json({
-        success: false,
-        message: "You can only access your own prescriptions",
+        message: "Doctor profile not found.",
       });
     }
 
@@ -51,6 +37,35 @@ export const getDoctorPrescriptions = async (req: Request, res: Response) => {
         instructions: true,
         issuedAt: true,
         validUntil: true,
+        patient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+          },
+        },
+        doctor: {
+          select: {
+            id: true,
+            primarySpecialty: true,
+            yearsOfPractice: true,
+            bio: true,
+            user: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+            clinic: {
+              select: {
+                id: true,
+                name: true,
+                address: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { issuedAt: "desc" },
     });
@@ -59,15 +74,16 @@ export const getDoctorPrescriptions = async (req: Request, res: Response) => {
       success: true,
       data: prescriptions,
     });
-  } catch (error) {
-    console.error("getDoctorPrescriptions error:", error);
+  } catch (error: unknown) {
+    console.error("Error fetching doctor prescriptions:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to retrieve prescriptions",
+      message: "Failed to retrieve prescriptions.",
     });
   }
 };
+
 
 export const createPrescription = async (req: Request, res: Response) => {
   try {
@@ -164,6 +180,25 @@ export const createPrescription = async (req: Request, res: Response) => {
       });
     }
 
+    const completedAppointment = await prisma.appointment.findFirst({
+      where: {
+        doctorId: doctor.id,
+        patientId: patient.id,
+        status: "COMPLETED",
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!completedAppointment) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "You can only prescribe medication to patients you have treated.",
+      });
+    }
+
     const prescription = await prisma.prescription.create({
       data: {
         patientId,
@@ -199,6 +234,67 @@ export const createPrescription = async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       message: "Failed to create prescription",
+    });
+  }
+};
+
+
+
+export const getDoctorPatients = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authorization is required.",
+      });
+    }
+
+    const doctor = await prisma.doctorProfile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+
+    if (!doctor) {
+      return res.status(403).json({
+        success: false,
+        message: "Doctor profile not found.",
+      });
+    }
+
+    // Return unique patients the doctor has actually seen.
+    const appointments = await prisma.appointment.findMany({
+      where: {
+        doctorId: doctor.id,
+        status: "COMPLETED",
+      },
+      select: {
+        patient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            email: true,
+          },
+        },
+      },
+      distinct: ["patientId"],
+    });
+
+    const patients = appointments.map(({ patient }) => patient);
+
+    return res.status(200).json({
+      success: true,
+      data: patients,
+    });
+  } catch (error: unknown) {
+    console.error("Error fetching doctor patients:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to retrieve doctor patients.",
     });
   }
 };
