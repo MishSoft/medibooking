@@ -277,7 +277,7 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
       })
     }
 
-    const { doctorId, status } = req.body
+    const { doctorId, status } = req.query
 
     if (typeof doctorId !== "string" || !doctorId.trim()) {
       return res.status(400).json({
