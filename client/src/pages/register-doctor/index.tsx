@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import {
@@ -23,6 +24,9 @@ import {
   type DoctorRegistrationFormInput,
   type DoctorRegistrationFormOutput,
 } from "../../schemas/doctorRegistration.schema";
+import { toDoctorRegisterPayload } from "../../api/auth.api";
+import { useClinics } from "../../hooks/useDoctors";
+import { useRegisterDoctor } from "../../hooks/useRegisterDoctor";
 import YearsOfPracticeField from "./components/YearsOfPracticeField";
 
 const genderOptions = [
@@ -51,6 +55,9 @@ const specialtyOptions = [
 
 function DoctorRegistrationPage() {
   const [submissionMessage, setSubmissionMessage] = useState("");
+  const navigate = useNavigate();
+  const registerDoctor = useRegisterDoctor();
+  const clinics = useClinics();
 
   const {
     control,
@@ -67,19 +74,23 @@ function DoctorRegistrationPage() {
       gender: Gender.MALE,
       primarySpecialty: specialtyOptions[0],
       yearsOfPractice: 12,
-      facility: "Tbilisi Central Clinic (Main Campus)",
+      clinicId: "",
       city: "Tbilisi Metropolitan",
       licenseCertification: false,
       clinicalConsent: false,
     },
   });
 
-  // TODO: submit via authApi once the doctor payload mapper and clinic list exist
   const onSubmit = async (data: DoctorRegistrationFormOutput) => {
-    console.log("Doctor registration data:", data);
-    setSubmissionMessage(
-      "Practitioner registration is not connected to a submission service yet.",
-    );
+    setSubmissionMessage("");
+    try {
+      await registerDoctor.mutateAsync(toDoctorRegisterPayload(data));
+      navigate("/dashboard/clinic", { replace: true });
+    } catch (error) {
+      setSubmissionMessage(
+        error instanceof Error ? error.message : "Doctor registration failed.",
+      );
+    }
   };
 
   return (
@@ -294,19 +305,31 @@ function DoctorRegistrationPage() {
                     </span>
                   </label>
                   <select
-                    aria-invalid={!!errors.facility}
+                    aria-invalid={!!errors.clinicId}
                     className="min-h-11 w-full rounded-lg bg-surface-lowest px-3 py-2 text-body-md text-on-surface shadow-elevation-1 outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                    disabled={clinics.isPending}
                     id="facility"
-                    {...register("facility")}
+                    {...register("clinicId")}
                   >
-                    <option>Tbilisi Central Clinic (Main Campus)</option>
-                    <option>University Clinic of Tbilisi</option>
-                    <option>Batumi Medical Center</option>
-                    <option>Other accredited facility</option>
+                    <option value="">
+                      {clinics.isPending
+                        ? "Loading facilities…"
+                        : "Select a facility"}
+                    </option>
+                    {clinics.data?.map((clinic) => (
+                      <option key={clinic.id} value={clinic.id}>
+                        {clinic.name}
+                      </option>
+                    ))}
                   </select>
-                  {errors.facility && (
+                  {errors.clinicId && (
                     <p className="mt-1 text-body-sm text-error" role="alert">
-                      {errors.facility.message}
+                      {errors.clinicId.message}
+                    </p>
+                  )}
+                  {clinics.isError && (
+                    <p className="mt-1 text-body-sm text-error" role="alert">
+                      Could not load facilities. Please refresh the page.
                     </p>
                   )}
                   <p className="mt-1 text-body-sm text-on-surface-variant">
@@ -341,7 +364,7 @@ function DoctorRegistrationPage() {
                 <Input
                   autoComplete="tel-national"
                   error={errors.phone?.message}
-                  label="Emergency Dispatch Mobile Phone"
+                  label="Mobile Phone"
                   leadingElement={
                     <span className="text-label-md text-primary">+995</span>
                   }
@@ -352,18 +375,18 @@ function DoctorRegistrationPage() {
                 />
               </div>
 
-              <Input
-                autoComplete="street-address"
-                className="mt-4"
-                error={errors.address?.message}
-                label="Clinical Office / Primary Practice Street Address"
-                leadingElement={<InfoCircleIcon className="h-4 w-4" />}
-                placeholder="29 Chavchavadze Ave, Building B, Floor 4, Suite 402"
-                required
-                {...register("address")}
-              />
-
-              <div className="mt-4 grid gap-4 sm:grid-cols-3">
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <Input
+                  error={errors.emergencyPhone?.message}
+                  label="Emergency Dispatch Phone"
+                  leadingElement={
+                    <span className="text-label-md text-primary">+995</span>
+                  }
+                  placeholder="599 98 76 54"
+                  required
+                  type="tel"
+                  {...register("emergencyPhone")}
+                />
                 <div>
                   <label
                     className="mb-1.5 block text-label-md text-on-surface"
@@ -393,22 +416,28 @@ function DoctorRegistrationPage() {
                     </p>
                   )}
                 </div>
-                <Input
-                  autoComplete="address-level3"
-                  error={errors.district?.message}
-                  label="District / Municipality"
-                  placeholder="Vake-Saburtalo"
-                  {...register("district")}
+              </div>
+
+              <div className="mt-4">
+                <label
+                  className="mb-1.5 block text-label-md text-on-surface"
+                  htmlFor="bio"
+                >
+                  Professional Bio
+                </label>
+                <textarea
+                  aria-invalid={!!errors.bio}
+                  className="min-h-24 w-full rounded-lg bg-surface-lowest px-3 py-2 text-body-md text-on-surface shadow-elevation-1 outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                  id="bio"
+                  maxLength={1000}
+                  placeholder="e.g. Cardiologist with 8 years of clinical experience."
+                  {...register("bio")}
                 />
-                <Input
-                  autoComplete="postal-code"
-                  error={errors.postalCode?.message}
-                  inputMode="numeric"
-                  label="Postal Code"
-                  maxLength={4}
-                  placeholder="0179"
-                  {...register("postalCode")}
-                />
+                {errors.bio && (
+                  <p className="mt-1 text-body-sm text-error" role="alert">
+                    {errors.bio.message}
+                  </p>
+                )}
               </div>
             </FormInputsWrapper>
 

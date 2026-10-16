@@ -6,10 +6,15 @@ import { doctorRegisterSchema } from "./auth.schema";
 const mustBeChecked = (message: string) =>
   z.boolean().refine((value) => value, message);
 
-// TODO: clinicId and emergencyPhone are required by the server — map them once a
-// clinics endpoint exists and the payload mapper (toDoctorRegisterPayload) is added
+const georgianMobile = z
+  .string()
+  .regex(
+    /^5\d{2} ?\d{2} ?\d{2} ?\d{2}$/,
+    "Enter a valid Georgian mobile number, e.g. 599 44 88 12",
+  );
+
 export const doctorRegistrationFormSchema = doctorRegisterSchema
-  .omit({ role: true, clinicId: true, emergencyPhone: true, bio: true })
+  .omit({ role: true })
   .extend({
     firstName: z
       .string()
@@ -47,19 +52,14 @@ export const doctorRegistrationFormSchema = doctorRegisterSchema
       .int("Years of practice must be a whole number")
       .min(0, "Years of practice cannot be negative")
       .max(70, "Years of practice looks too high"),
-    facility: z.string().min(1, "Select an associated facility"),
-    phone: z
-      .string()
-      .regex(
-        /^5\d{2} ?\d{2} ?\d{2} ?\d{2}$/,
-        "Enter a valid Georgian mobile number, e.g. 599 44 88 12",
-      ),
-    address: z.string().trim().min(1, "Street address is required"),
+    clinicId: z.string().uuid("Select an associated facility"),
+    phone: georgianMobile,
+    emergencyPhone: georgianMobile,
     city: z.string().min(1, "Region / city is required"),
-    district: z.string().optional(),
-    postalCode: z
+    bio: z
       .string()
-      .regex(/^(\d{4})?$/, "Postal code must be 4 digits")
+      .trim()
+      .max(1000, "Bio must be at most 1000 characters")
       .optional(),
     password: z
       .string()
