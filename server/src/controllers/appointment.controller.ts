@@ -264,3 +264,188 @@ export const cancelAppointment = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+export const getDoctorAppointments = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authorization is required"
+      })
+    }
+
+    const { doctorId, status } = req.body
+
+    if (typeof doctorId !== "string" || !doctorId.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "doctorId is required"
+      })
+    }
+
+    const allowedStatuses = [
+      "SCHEDULED",
+      "COMPLETED",
+      "CANCELLED",
+      "PENDING",
+    ] as const;
+
+    if (
+      status !== undefined &&
+      (typeof status !== "string" ||
+        !allowedStatuses.includes(status as (typeof allowedStatuses)[number])
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid appointment status."
+      })
+    }
+
+    const doctor = await prisma.doctorProfile.findUnique({
+      where: { userId },
+      select: {id: true}
+    })
+
+    if (!doctor || doctor.id !== doctorId) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to access these appointment."
+      })
+    }
+
+    const appointment = await prisma.appointment.findMany({
+      where: {
+        doctorId: doctor.id,
+        ...(status ? {status: status as (typeof allowedStatuses)[number]}: {})
+      },
+      select: {
+        id: true,
+        patientId: true,
+        doctorId: true,
+        startAt: true,
+        status: true,
+        notes: true
+      },
+      orderBy: {startAt: "asc"}
+    })
+
+    return res.status(200).json({
+      success: true,
+      data: appointment
+    })
+
+  } catch (error) {
+    console.error("Error fetching doctor appointment:", error)
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    })
+  }
+}
+
+
+export const updateAppointmentStatus = async(
+  req: Request,
+  res: Response
+) => {
+  try {
+    const userId = req.user?.userId
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authorization is required."
+      })
+    }
+
+    const params = paramsSchema.safeParse(req.params)
+
+    if (!params.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Wrong data",
+        error: params.error.format()
+      })
+    }
+
+    const { id } = params.data
+    const { status, notes } = req.body
+
+    if (
+      status !== "COMPLETED" ||
+      (notes !== undefined && typeof notes !== "string")
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status or notes."
+      })
+    }
+
+    const doctor = await prisma.doctorProfile.findUnique({
+      where: { userId },
+      select: {id: true}
+    })
+
+    if (!doctor) {
+      return res.status(403).json({
+        success: false,
+        message: "Only doctros can update appointments."
+      })
+    }
+
+    const appointment = await prisma.appointment.findFirst({
+      where: {
+        id,
+        doctorId: doctor.id
+      },
+      select: {
+        id: true,
+        status: true
+      }
+    })
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Appointment not found."
+      })
+    }
+
+    if (appointment.status !== "SCHEDULED") {
+      return res.status(409).json({
+        success: false,
+        message: "Only shceduled appointments can be completed."
+      })
+    }
+
+    const updatedAppointment = await prisma.appointment.update({
+      where: { id: appointment.id },
+      data: {
+        status: "COMPLETED",
+        ...(notes !== undefined ? { notes } : {})
+      },
+      select: {
+        id: true,
+        status: true,
+        notes: true
+      }
+    })
+
+    return res.status(200).json({
+      success: true,
+      message: "Appointment updated successfully.",
+      data: updatedAppointment,
+    });
+  } catch (error) {
+    console.error("Error updating appointment status: ", error)
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error."
+    })
+  }
+}

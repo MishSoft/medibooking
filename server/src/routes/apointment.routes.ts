@@ -1,6 +1,10 @@
 import { Router } from "express";
 import { authenticate, authorize } from "../middleware/auth.middleware";
-import { cancelAppointment, createAppointment } from "../controllers/appointment.controller";
+import {
+  cancelAppointment,
+  createAppointment,
+  updateAppointmentStatus,
+} from "../controllers/appointment.controller";
 
 const router = Router();
 
@@ -18,5 +22,12 @@ router.patch(
   authorize("PATIENT"),
   cancelAppointment
 )
+
+router.patch(
+  "/appointment/:id/status",
+  authenticate,
+  authorize("DOCTOR"),
+  updateAppointmentStatus,
+);
 
 export default router;

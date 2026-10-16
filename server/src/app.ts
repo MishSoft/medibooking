@@ -6,6 +6,7 @@ import patientRoutes from "./routes/patient.routes"
 import appointmentRoutes from "./routes/apointment.routes";
 import doctorRoutes from "./routes/doctor.routes"
 import clinicRoutes from "./routes/api.routes"
+import prescriptionRoutes from "./routes/prescription.routes";
 const app = express();
 
 app.use(cors())
@@ -16,7 +17,7 @@ app.use("/api", patientRoutes);
 app.use("/api", appointmentRoutes);
 app.use("/api", doctorRoutes);
 app.use("/api", clinicRoutes);
-
+app.use("/api", prescriptionRoutes)
 setupSwagger(app)
 
 export default app
