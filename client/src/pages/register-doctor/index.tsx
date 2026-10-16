@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
@@ -25,7 +25,7 @@ import {
   type DoctorRegistrationFormOutput,
 } from "../../schemas/doctorRegistration.schema";
 import { toDoctorRegisterPayload } from "../../api/auth.api";
-import { useClinics } from "../../hooks/useDoctors";
+import { useMe } from "../../hooks/useMe";
 import { useRegisterDoctor } from "../../hooks/useRegisterDoctor";
 import YearsOfPracticeField from "./components/YearsOfPracticeField";
 
@@ -57,12 +57,14 @@ function DoctorRegistrationPage() {
   const [submissionMessage, setSubmissionMessage] = useState("");
   const navigate = useNavigate();
   const registerDoctor = useRegisterDoctor();
-  const clinics = useClinics();
+  const me = useMe();
+  const managedClinic = me.data?.managedClinic;
 
   const {
     control,
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<
     DoctorRegistrationFormInput,
@@ -80,6 +82,11 @@ function DoctorRegistrationPage() {
       clinicalConsent: false,
     },
   });
+
+  // Doctors are always registered into the signed-in admin's own clinic
+  useEffect(() => {
+    if (managedClinic) setValue("clinicId", managedClinic.id);
+  }, [managedClinic, setValue]);
 
   const onSubmit = async (data: DoctorRegistrationFormOutput) => {
     setSubmissionMessage("");
@@ -304,32 +311,26 @@ function DoctorRegistrationPage() {
                       *
                     </span>
                   </label>
-                  <select
+                  <input
                     aria-invalid={!!errors.clinicId}
-                    className="min-h-11 w-full rounded-lg bg-surface-lowest px-3 py-2 text-body-md text-on-surface shadow-elevation-1 outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-                    disabled={clinics.isPending}
+                    className="min-h-11 w-full rounded-lg bg-surface-container-high px-3 py-2 text-body-md text-on-surface-variant shadow-elevation-1 outline-none"
                     id="facility"
-                    {...register("clinicId")}
-                  >
-                    <option value="">
-                      {clinics.isPending
-                        ? "Loading facilities…"
-                        : "Select a facility"}
-                    </option>
-                    {clinics.data?.map((clinic) => (
-                      <option key={clinic.id} value={clinic.id}>
-                        {clinic.name}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.clinicId && (
+                    readOnly
+                    value={
+                      me.isPending
+                        ? "Loading your clinic…"
+                        : (managedClinic?.name ?? "")
+                    }
+                  />
+                  <input type="hidden" {...register("clinicId")} />
+                  {errors.clinicId && !me.isError && (
                     <p className="mt-1 text-body-sm text-error" role="alert">
                       {errors.clinicId.message}
                     </p>
                   )}
-                  {clinics.isError && (
+                  {(me.isError || (me.isSuccess && !managedClinic)) && (
                     <p className="mt-1 text-body-sm text-error" role="alert">
-                      Could not load facilities. Please refresh the page.
+                      Could not load your clinic. Please refresh the page.
                     </p>
                   )}
                   <p className="mt-1 text-body-sm text-on-surface-variant">

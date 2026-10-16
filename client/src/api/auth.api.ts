@@ -92,7 +92,13 @@ export type LoginResponseData = {
   token: string;
 };
 
+// Subset of GET /api/auth/me used by the client; managedClinic is set for CLINIC_ADMIN
+export type MeResponseData = AuthUser & {
+  managedClinic: { id: string; name: string } | null;
+};
+
 export const authApi = {
+  me: () => apiRequest<ApiResponse<MeResponseData>>("api/auth/me"),
   login: (payload: LoginPayload) =>
     apiRequest<ApiResponse<LoginResponseData>>("api/auth/login", {
       method: "POST",

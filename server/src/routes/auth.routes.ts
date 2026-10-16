@@ -17,6 +17,7 @@ import {
 import {
   authenticate,
   authenticateForLogout,
+  authorize,
 } from "../middleware/auth.middleware";
 
 const router = Router();
@@ -35,6 +36,8 @@ router.post(
 
 router.post(
   "/register/doctor",
+  authenticate,
+  authorize("CLINIC_ADMIN"),
   validate(doctorRegisterSchema),
   registerDoctorController,
 );

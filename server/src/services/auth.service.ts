@@ -148,7 +148,7 @@ export class AuthService {
     };
   }
 
-  static async registerDoctor(data: DoctorRegisterInput) {
+  static async registerDoctor(data: DoctorRegisterInput, adminId: string) {
     const existingUser = await prisma.user.findUnique({
       where: { email: data.email },
     });
@@ -171,6 +171,11 @@ export class AuthService {
 
     if (!clinicExists) {
       throw new Error("Clinic not found");
+    }
+
+    // A clinic admin may only register doctors into the clinic they manage
+    if (clinicExists.adminId !== adminId) {
+      throw new Error("You can only register doctors for your own clinic");
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);

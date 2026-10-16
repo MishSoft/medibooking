@@ -83,7 +83,11 @@ export const registerDoctorController = async (
 ) => {
   try {
     const validatedData = doctorRegisterSchema.parse(req.body);
-    const result = await AuthService.registerDoctor(validatedData);
+    // authenticate + authorize("CLINIC_ADMIN") guarantee req.user
+    const result = await AuthService.registerDoctor(
+      validatedData,
+      req.user!.userId,
+    );
 
     return res.status(201).json({
       success: true,
