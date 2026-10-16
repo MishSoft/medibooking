@@ -26,9 +26,6 @@ function ScheduleSection() {
       })
     : upcomingAppointments;
 
-  const hasAppointmentsToday =
-    upcomingAppointments.length > 0 && !selectedDate;
-
   return (
     <QueryState error={error} isPending={isPending}>
       <div className="grid gap-8 md:grid-cols-[auto_1fr]">
