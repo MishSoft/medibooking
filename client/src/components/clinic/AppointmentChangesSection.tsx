@@ -77,6 +77,7 @@ function AppointmentChangesSection() {
   const {
     data: appointments = [],
     isPending,
+    isPlaceholderData,
     error,
   } = useClinicAppointments(filters);
 
@@ -161,7 +162,11 @@ function AppointmentChangesSection() {
 
       <QueryState error={error} isPending={isPending}>
         {listed.length > 0 ? (
-          <div className="space-y-3">
+          // Previous results stay visible, dimmed, while new filters load
+          <div
+            aria-busy={isPlaceholderData}
+            className={`space-y-3 transition-opacity ${isPlaceholderData ? "opacity-60" : ""}`}
+          >
             <p
               aria-live="polite"
               className="text-body-sm text-on-surface-variant"

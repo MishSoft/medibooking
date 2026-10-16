@@ -37,7 +37,8 @@ const getRange = (range: ReportRange): DateRange => {
 function ClinicReportsSection() {
   const [range, setRange] = useState<ReportRange>("last30");
   const dateRange = useMemo(() => getRange(range), [range]);
-  const { data: stats, isPending, isFetching, error } = useClinicStats(dateRange);
+  const { data: stats, isPending, isFetching, isPlaceholderData, error } =
+    useClinicStats(dateRange);
 
   const busiest = stats?.workload.reduce<DoctorWorkload | undefined>(
     (top, item) => (!top || item.utilisation > top.utilisation ? item : top),
@@ -65,7 +66,11 @@ function ClinicReportsSection() {
 
       <QueryState error={error} isPending={isPending}>
         {stats && stats.total > 0 ? (
-          <div className="space-y-6">
+          // Previous period stays visible, dimmed, while the new one loads
+          <div
+            aria-busy={isPlaceholderData}
+            className={`space-y-6 transition-opacity ${isPlaceholderData ? "opacity-60" : ""}`}
+          >
             <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <StatTile
                 hint={`${stats.completed} completed · ${stats.upcoming} upcoming`}

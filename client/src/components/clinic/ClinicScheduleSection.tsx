@@ -38,22 +38,29 @@ function ClinicScheduleSection({
     null,
   );
 
+  const doctorsQuery = useClinicDoctors();
+  const doctors = doctorsQuery.data ?? [];
+
+  // A stale or unknown ?doctor= id falls back to all doctors
+  const activeDoctorId =
+    doctorsQuery.isPending || doctors.some((doctor) => doctor.id === doctorId)
+      ? doctorId
+      : "";
+
   const dayFilters = useMemo(() => {
     const from = startOfDay(selectedDate);
     return {
       from: from.toISOString(),
       to: addDays(from, 1).toISOString(),
-      doctorId: doctorId || undefined,
+      doctorId: activeDoctorId || undefined,
     };
-  }, [selectedDate, doctorId]);
+  }, [selectedDate, activeDoctorId]);
 
-  const doctorsQuery = useClinicDoctors();
   const appointmentsQuery = useClinicAppointments(dayFilters);
-  const doctors = doctorsQuery.data ?? [];
   const appointments = appointmentsQuery.data ?? [];
 
-  const visibleDoctors = doctorId
-    ? doctors.filter((doctor) => doctor.id === doctorId)
+  const visibleDoctors = activeDoctorId
+    ? doctors.filter((doctor) => doctor.id === activeDoctorId)
     : doctors;
 
   return (
@@ -75,7 +82,7 @@ function ClinicScheduleSection({
             label: getDoctorName(doctor),
           }))}
           placeholder="All doctors"
-          value={doctorId}
+          value={activeDoctorId}
         />
       </div>
 
@@ -95,7 +102,10 @@ function ClinicScheduleSection({
           isPending={doctorsQuery.isPending || appointmentsQuery.isPending}
         >
           {visibleDoctors.length > 0 ? (
-            <div className="space-y-6">
+            <div
+              aria-busy={appointmentsQuery.isPlaceholderData}
+              className={`space-y-6 transition-opacity ${appointmentsQuery.isPlaceholderData ? "opacity-60" : ""}`}
+            >
               {visibleDoctors.map((doctor) => (
                 <DoctorDaySchedule
                   appointments={appointments.filter(
