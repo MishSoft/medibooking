@@ -1,5 +1,6 @@
 import type { LoginInput } from "../schemas/auth.schema";
 import type { ClinicRegistrationFormOutput } from "../schemas/clinicRegistration.schema";
+import type { DoctorRegistrationFormOutput } from "../schemas/doctorRegistration.schema";
 import type { Role } from "../types/enums";
 import type { PatientRegistrationFormOutput } from "../schemas/patientRegistration.schema";
 import { apiRequest } from "./client";
@@ -49,6 +50,33 @@ export function toClinicRegisterPayload({
   return payload;
 }
 
+type DoctorFormOnlyFields =
+  | "confirmPassword"
+  | "licenseCertification"
+  | "clinicalConsent";
+
+export type DoctorRegisterPayload = Omit<
+  DoctorRegistrationFormOutput,
+  DoctorFormOnlyFields
+>;
+
+// Phones are entered as "599 44 88 12"; the server stores digits only
+const toDigits = (value: string) => value.replace(/\s/g, "");
+
+export function toDoctorRegisterPayload({
+  confirmPassword: _confirmPassword,
+  licenseCertification: _licenseCertification,
+  clinicalConsent: _clinicalConsent,
+  ...payload
+}: DoctorRegistrationFormOutput): DoctorRegisterPayload {
+  return {
+    ...payload,
+    phone: toDigits(payload.phone),
+    emergencyPhone: toDigits(payload.emergencyPhone),
+    bio: payload.bio || undefined,
+  };
+}
+
 export type LoginPayload = LoginInput;
 
 export type AuthUser = {
@@ -81,6 +109,12 @@ export const authApi = {
     }),
   registerClinic: (payload: ClinicRegisterPayload) =>
     apiRequest<ApiResponse>("api/auth/register/clinic", {
+      method: "POST",
+      body: payload,
+    }),
+  // Response also carries the new doctor's token; the registering clinic admin ignores it
+  registerDoctor: (payload: DoctorRegisterPayload) =>
+    apiRequest<ApiResponse>("api/auth/register/doctor", {
       method: "POST",
       body: payload,
     }),

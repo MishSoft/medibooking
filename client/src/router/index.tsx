@@ -62,6 +62,7 @@ export const router = createBrowserRouter([
   {
     path: '/register-doctor',
     element: <DoctorRegistrationPage />,
+    loader: requireRole(Role.CLINIC_ADMIN),
   },
   {
     path: '/dashboard',
