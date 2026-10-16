@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { authApi } from "../api/auth.api";
 import { authStorage } from "../api/auth.storage";
-import { PractitionerSignInIcon } from "../assets/icons/Icons";
+import { CloseIcon, PractitionerSignInIcon } from "../assets/icons/Icons";
 import { Role } from "../types/enums";
 
 const roleLabels: Record<Role, string> = {
@@ -100,13 +100,23 @@ function Header({ role = "Patient" }: HeaderProps) {
                 className="absolute right-0 top-full z-50 mt-2 w-64 rounded-xl border border-surface-container-high bg-surface-container p-2 shadow-elevation-3"
                 role="menu"
               >
-                <div className="px-3 py-2">
-                  <p className="truncate text-body-md font-semibold text-on-surface">
-                    {user.firstName} {user.lastName}
-                  </p>
-                  <p className="truncate text-body-sm text-on-surface-variant">
-                    {user.email}
-                  </p>
+                <div className="flex items-start gap-2 py-2 pl-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-body-md font-semibold text-on-surface">
+                      {user.firstName} {user.lastName}
+                    </p>
+                    <p className="truncate text-body-sm text-on-surface-variant">
+                      {user.email}
+                    </p>
+                  </div>
+                  <button
+                    aria-label="Close profile menu"
+                    className="inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                    onClick={() => setIsMenuOpen(false)}
+                    type="button"
+                  >
+                    <CloseIcon aria-hidden="true" className="h-3.5 w-3.5" />
+                  </button>
                 </div>
                 <div className="my-1 h-px bg-surface-container-high" />
                 <button
