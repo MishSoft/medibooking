@@ -4,6 +4,7 @@ import {
   cancelAppointment,
   createAppointment,
   updateAppointmentStatus,
+  getDoctorAppointments,
 } from "../controllers/appointment.controller";
 
 const router = Router();
@@ -15,16 +16,22 @@ router.post(
   createAppointment,
 );
 
+router.get(
+  "/appointments",
+  authenticate,
+  authorize("DOCTOR"),
+  getDoctorAppointments,
+);
 
 router.patch(
   "/appointments/:id/cancel",
   authenticate,
   authorize("PATIENT"),
-  cancelAppointment
-)
+  cancelAppointment,
+);
 
 router.patch(
-  "/appointment/:id/status",
+  "/appointments/:id/status",
   authenticate,
   authorize("DOCTOR"),
   updateAppointmentStatus,
