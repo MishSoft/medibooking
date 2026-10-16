@@ -1,10 +1,8 @@
 import { format } from "date-fns";
-import { ClinicBuildingIcon } from "../../assets/icons/Icons";
 import type { Appointment } from "../../types/appointment";
 import Button from "../../shared/ui/Button";
-import Tag from "../../shared/ui/Tag";
-import { getDoctorName } from "../doctors/DoctorCard";
 import AppointmentStatusBadge from "../appointments/AppointmentStatusBadge";
+import { getPatientName } from "./PatientVisitCard";
 
 type DoctorAppointmentCardProps = {
   appointment: Appointment;
@@ -15,7 +13,7 @@ function DoctorAppointmentCard({
   appointment,
   onComplete,
 }: DoctorAppointmentCardProps) {
-  const { doctor, status, notes } = appointment;
+  const { patient, status, notes } = appointment;
   const startsAt = new Date(appointment.startsAt);
 
   return (
@@ -36,18 +34,8 @@ function DoctorAppointmentCard({
       <div className="flex min-w-0 flex-1 items-start gap-3">
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-headline-sm">Patient Appointment</h3>
+            <h3 className="text-headline-sm">{getPatientName(patient)}</h3>
             <AppointmentStatusBadge status={status} />
-          </div>
-          <div className="flex flex-wrap items-center gap-2 text-body-sm text-on-surface-variant">
-            <Tag tone="secondary">{doctor.specialty}</Tag>
-            <span className="inline-flex items-center gap-1.5">
-              <ClinicBuildingIcon
-                aria-hidden="true"
-                className="h-4 w-4 text-primary"
-              />
-              {doctor.clinic.name}
-            </span>
           </div>
           <p className="text-body-sm text-on-surface-variant">
             {format(startsAt, "EEEE, d MMMM yyyy")}

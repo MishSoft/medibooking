@@ -11,11 +11,18 @@ export type AppointmentDto = {
   status: AppointmentStatus;
   notes: string | null;
   doctor: DoctorDto;
+  // Returned by GET /api/appointments (doctor) only
+  patient?: { id: string; firstName: string; lastName: string };
 };
 
 export const toAppointment = (dto: AppointmentDto): Appointment => ({
   id: dto.id,
   doctor: toDoctor(dto.doctor),
+  patient: dto.patient && {
+    id: dto.patient.id,
+    firstName: dto.patient.firstName,
+    lastName: dto.patient.lastName,
+  },
   startsAt: dto.startAt,
   status: dto.status,
   notes: dto.notes ?? undefined,

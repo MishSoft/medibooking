@@ -5,7 +5,7 @@ import { getPastAppointments } from "../../utils/appointments";
 import Input from "../../shared/ui/Input";
 import QueryState from "../../shared/ui/QueryState";
 import EmptyState from "../../shared/ui/EmptyState";
-import PatientVisitCard from "./PatientVisitCard";
+import PatientVisitCard, { getPatientName } from "./PatientVisitCard";
 
 function PatientHistorySection() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -13,14 +13,10 @@ function PatientHistorySection() {
 
   const pastAppointments = getPastAppointments(data);
 
-  const filteredAppointments = pastAppointments.filter((apt) => {
-    const searchLower = searchQuery.toLowerCase();
-    // Filter by clinic name or specialty
-    return (
-      apt.doctor.clinic.name.toLowerCase().includes(searchLower) ||
-      apt.doctor.specialty.toLowerCase().includes(searchLower)
-    );
-  });
+  const searchLower = searchQuery.trim().toLowerCase();
+  const filteredAppointments = pastAppointments.filter((apt) =>
+    getPatientName(apt.patient).toLowerCase().includes(searchLower),
+  );
 
   return (
     <QueryState error={error} isPending={isPending}>
@@ -28,7 +24,7 @@ function PatientHistorySection() {
         <Input
           label="Search patient history"
           leadingElement={<SearchIcon aria-hidden="true" className="h-4 w-4" />}
-          placeholder="Search by clinic or specialty..."
+          placeholder="Search by patient name..."
           type="search"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
