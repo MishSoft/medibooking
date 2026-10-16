@@ -13,6 +13,13 @@ export function useAppointments() {
   });
 }
 
+export function useDoctorAppointments() {
+  return useQuery({
+    queryKey: [...appointmentsQueryKey, "doctor"],
+    queryFn: appointmentsApi.listForDoctor,
+  });
+}
+
 export function useBookAppointment() {
   const queryClient = useQueryClient();
 
