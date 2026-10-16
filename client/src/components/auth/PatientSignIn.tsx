@@ -44,7 +44,7 @@ function PatientSignIn({ onRegisterClick }: PatientSignInProps) {
       }
 
       authStorage.setSession(response.data.token, response.data.user);
-      navigate("/dashboard/patient");
+      navigate("/dashboard/patient", { replace: true });
     } catch (error) {
       setLoginError(error instanceof Error ? error.message : "Login failed.");
     }

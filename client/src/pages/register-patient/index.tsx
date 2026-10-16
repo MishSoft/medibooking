@@ -67,7 +67,7 @@ function PatientRegistrationPage() {
       }
 
       authStorage.setSession(response.data.token, response.data.user);
-      navigate("/dashboard/patient");
+      navigate("/dashboard/patient", { replace: true });
     } catch (error) {
       setSubmissionMessage(
         error instanceof Error ? error.message : "Registration failed.",
