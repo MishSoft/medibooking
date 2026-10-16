@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { startOfToday } from "date-fns";
 import { PractitionerCalendarIcon } from "../../assets/icons/Icons";
-import { useAppointments } from "../../hooks/useAppointments";
+import { useDoctorAppointments } from "../../hooks/useAppointments";
 import {
   getUpcomingAppointments,
 } from "../../utils/appointments";
@@ -12,7 +12,7 @@ import DoctorAppointmentCard from "./DoctorAppointmentCard";
 
 function ScheduleSection() {
   const [selectedDate, setSelectedDate] = useState<Date>();
-  const { data = [], isPending, error } = useAppointments();
+  const { data = [], isPending, error } = useDoctorAppointments();
   const upcomingAppointments = getUpcomingAppointments(data);
 
   const appointmentsForDate = selectedDate

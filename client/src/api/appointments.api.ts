@@ -27,9 +27,17 @@ export type CreateAppointmentPayload = {
 };
 
 export const appointmentsApi = {
+  // Signed-in patient's own appointments (PATIENT only)
   list: async (): Promise<Appointment[]> => {
     const response = await apiRequest<ApiResponse<AppointmentDto[]>>(
       "api/patient/appointments",
+    );
+    return (response.data ?? []).map(toAppointment);
+  },
+  // Signed-in doctor's own appointments (DOCTOR only)
+  listForDoctor: async (): Promise<Appointment[]> => {
+    const response = await apiRequest<ApiResponse<AppointmentDto[]>>(
+      "api/appointments",
     );
     return (response.data ?? []).map(toAppointment);
   },

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { RecordsFolderIcon, SearchIcon } from "../../assets/icons/Icons";
-import { useAppointments } from "../../hooks/useAppointments";
+import { useDoctorAppointments } from "../../hooks/useAppointments";
 import { getPastAppointments } from "../../utils/appointments";
 import Input from "../../shared/ui/Input";
 import QueryState from "../../shared/ui/QueryState";
@@ -9,7 +9,7 @@ import PatientVisitCard from "./PatientVisitCard";
 
 function PatientHistorySection() {
   const [searchQuery, setSearchQuery] = useState("");
-  const { data = [], isPending, error } = useAppointments();
+  const { data = [], isPending, error } = useDoctorAppointments();
 
   const pastAppointments = getPastAppointments(data);
 
