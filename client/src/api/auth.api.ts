@@ -75,7 +75,7 @@ export const authApi = {
       method: "POST",
     }),
   registerPatient: (payload: PatientRegisterPayload) =>
-    apiRequest<ApiResponse>("api/auth/register/patient", {
+    apiRequest<ApiResponse<LoginResponseData>>("api/auth/register/patient", {
       method: "POST",
       body: payload,
     }),

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import FormInputsWrapper from "../../components/FormInputsWrapper";
@@ -22,6 +22,7 @@ import {
   type PatientRegistrationFormOutput,
 } from "../../schemas/patientRegistration.schema";
 import { toPatientRegisterPayload } from "../../api/auth.api";
+import { authStorage } from "../../api/auth.storage";
 import { useRegisterPatient } from "../../hooks/useRegisterPatient";
 
 const genderOptions = [
@@ -34,6 +35,7 @@ const genderOptions = [
 function PatientRegistrationPage() {
   const [submissionMessage, setSubmissionMessage] = useState("");
   const registerPatient = useRegisterPatient();
+  const navigate = useNavigate();
 
   const {
     register,
@@ -59,7 +61,13 @@ function PatientRegistrationPage() {
       const response = await registerPatient.mutateAsync(
         toPatientRegisterPayload(data),
       );
-      console.log("Patient registered:", response);
+
+      if (!response.data) {
+        throw new Error("Registration failed.");
+      }
+
+      authStorage.setSession(response.data.token, response.data.user);
+      navigate("/dashboard/patient");
     } catch (error) {
       setSubmissionMessage(
         error instanceof Error ? error.message : "Registration failed.",
