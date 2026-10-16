@@ -57,6 +57,7 @@ export const router = createBrowserRouter([
   {
     path: '/register-clinic',
     element: <ClinicRegistrationPage />,
+    loader: redirectSignedInUser,
   },
   {
     path: '/register-doctor',
