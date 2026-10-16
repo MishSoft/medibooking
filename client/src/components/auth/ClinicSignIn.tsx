@@ -13,7 +13,9 @@ import {
 } from "../../schemas/signIn.schema";
 import FieldError from "../../shared/ui/FieldError";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { useLogin } from "../../hooks/useLogin";
+import { authStorage } from "../../api/auth.storage";
 
 type ClinicSignInProps = {
   onRegisterClick: () => void;
@@ -25,6 +27,7 @@ const fieldBorder = (hasError: boolean) =>
 function ClinicSignIn({ onRegisterClick }: ClinicSignInProps) {
   const [loginError, setLoginError] = useState("");
   const login = useLogin();
+  const navigate = useNavigate();
 
   const {
     register,
@@ -39,7 +42,13 @@ function ClinicSignIn({ onRegisterClick }: ClinicSignInProps) {
     try {
       // facilityId is not accepted by the login endpoint yet
       const response = await login.mutateAsync({ identifier, password });
-      console.log("Clinic admin logged in:", response);
+
+      if (!response.data) {
+        throw new Error("Login failed.");
+      }
+
+      authStorage.setSession(response.data.token, response.data.user);
+      navigate("/dashboard/clinic", { replace: true });
     } catch (error) {
       setLoginError(error instanceof Error ? error.message : "Login failed.");
     }
