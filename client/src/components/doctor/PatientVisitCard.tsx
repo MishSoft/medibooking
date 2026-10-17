@@ -1,8 +1,9 @@
 import { format } from "date-fns";
-import type { Appointment, AppointmentPatient } from "../../types/appointment";
+import type { Appointment } from "../../types/appointment";
+import type { Patient } from "../../types/patient";
 import AppointmentStatusBadge from "../appointments/AppointmentStatusBadge";
 
-export const getPatientName = (patient?: AppointmentPatient) =>
+export const getPatientName = (patient?: Patient) =>
   patient ? `${patient.firstName} ${patient.lastName}` : "Unknown patient";
 
 type PatientVisitCardProps = {

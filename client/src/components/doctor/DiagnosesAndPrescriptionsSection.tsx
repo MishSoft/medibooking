@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { usePrescriptions, useAddPrescription } from "../../hooks/usePrescriptions";
+import {
+  useAddPrescription,
+  useDoctorPrescriptions,
+} from "../../hooks/usePrescriptions";
 import { PillIcon } from "../../assets/icons/Icons";
 import Button from "../../shared/ui/Button";
 import QueryState from "../../shared/ui/QueryState";
@@ -10,7 +13,7 @@ import AddPrescriptionModal from "./AddPrescriptionModal";
 
 function DiagnosesAndPrescriptionsSection() {
   const [showAddModal, setShowAddModal] = useState(false);
-  const { data = [], isPending, error } = usePrescriptions();
+  const { data = [], isPending, error } = useDoctorPrescriptions();
   const addPrescription = useAddPrescription();
 
   const handleAddPrescription = async (formData: any) => {

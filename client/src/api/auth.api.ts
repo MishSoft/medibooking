@@ -4,6 +4,7 @@ import type { DoctorRegistrationFormOutput } from "../schemas/doctorRegistration
 import type { Role } from "../types/enums";
 import type { PatientRegistrationFormOutput } from "../schemas/patientRegistration.schema";
 import { apiRequest } from "./client";
+import type { DoctorScheduleDto } from "./doctors.api";
 
 export type ApiResponse<TData = unknown> = {
   success: boolean;
@@ -92,9 +93,14 @@ export type LoginResponseData = {
   token: string;
 };
 
-// Subset of GET /api/auth/me used by the client; managedClinic is set for CLINIC_ADMIN
+// Subset of GET /api/auth/me used by the client; managedClinic is set for
+// CLINIC_ADMIN, doctorProfile for DOCTOR
 export type MeResponseData = AuthUser & {
   managedClinic: { id: string; name: string } | null;
+  doctorProfile: {
+    id: string;
+    schedule: DoctorScheduleDto | null;
+  } | null;
 };
 
 export const authApi = {

@@ -1,9 +1,11 @@
 import type { Doctor } from "./doctor";
+import type { Patient } from "./patient";
 
-// No Prescription model on the server yet — align with Prisma once it exists
 export type Prescription = {
   id: string;
   doctor: Doctor;
+  // Only present in the doctor's own prescription list
+  patient?: Patient;
   medication: string;
   dosage: string;
   frequency: string;

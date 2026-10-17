@@ -2,14 +2,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   prescriptionsApi,
   type CreatePrescriptionPayload,
+  type UpdatePrescriptionPayload,
 } from "../api/prescriptions.api";
 
 export const prescriptionsQueryKey = ["prescriptions"] as const;
+export const doctorPrescriptionsQueryKey = [
+  ...prescriptionsQueryKey,
+  "doctor",
+] as const;
 
-export function usePrescriptions() {
+export function useDoctorPrescriptions() {
   return useQuery({
-    queryKey: prescriptionsQueryKey,
-    queryFn: prescriptionsApi.list,
+    queryKey: doctorPrescriptionsQueryKey,
+    queryFn: prescriptionsApi.listForDoctor,
   });
 }
 
@@ -27,6 +32,22 @@ export function useAddPrescription() {
     mutationFn: (payload: CreatePrescriptionPayload) =>
       prescriptionsApi.create(payload),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: prescriptionsQueryKey }),
+      queryClient.invalidateQueries({ queryKey: doctorPrescriptionsQueryKey }),
+  });
+}
+
+export function useUpdatePrescription() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: UpdatePrescriptionPayload;
+    }) => prescriptionsApi.update(id, payload),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: doctorPrescriptionsQueryKey }),
   });
 }
