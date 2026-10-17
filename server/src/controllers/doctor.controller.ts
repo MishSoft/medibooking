@@ -128,6 +128,7 @@ export const getDoctors = async (req: Request, res: Response) => {
   }
 };
 
+
 export const getDoctorsSlots = async (req: Request, res: Response) => {
   try {
     const params = doctorSlotsParamsSchema.safeParse(req.params);
@@ -162,6 +163,36 @@ export const getDoctorsSlots = async (req: Request, res: Response) => {
         success: false,
         message: "Date must use YYYY-MM-DD format.",
       });
+    }
+
+    // Clinic admins can only view slots for doctors in their own clinic.
+    if (req.user?.role === "CLINIC_ADMIN") {
+      const clinic = await prisma.clinic.findUnique({
+        where: { adminId: req.user.userId },
+        select: { id: true },
+      });
+
+      if (!clinic) {
+        return res.status(404).json({
+          success: false,
+          message: "Clinic not found.",
+        });
+      }
+
+      const doctorBelongsToClinic = await prisma.doctorProfile.findFirst({
+        where: {
+          id,
+          clinicId: clinic.id,
+        },
+        select: { id: true },
+      });
+
+      if (!doctorBelongsToClinic) {
+        return res.status(404).json({
+          success: false,
+          message: "Doctor not found in your clinic.",
+        });
+      }
     }
 
     const doctor = await prisma.doctorProfile.findUnique({
@@ -216,7 +247,9 @@ export const getDoctorsSlots = async (req: Request, res: Response) => {
     );
 
     const nowLocal = getClinicNow();
-    const maxBookingDate = nowLocal.plus({ months: MAX_MONTHS_AHEAD });
+    const maxBookingDate = nowLocal.plus({
+      months: MAX_MONTHS_AHEAD,
+    });
 
     const slots = generateScheduleSlots(dayLocal, doctor.schedule).map(
       (slot) => {
@@ -247,4 +280,5 @@ export const getDoctorsSlots = async (req: Request, res: Response) => {
     });
   }
 };
+
 

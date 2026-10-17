@@ -6,6 +6,7 @@ import {
   getClinicAppointments,
   rescheduleClinicAppointment,
   cancelClinicAppointment,
+  getClinicStats,
 } from "../controllers/clinic.controller";
 import { authenticate, authorize } from "../middleware/auth.middleware";
 
@@ -51,6 +52,13 @@ router.patch(
   authenticate,
   authorize("CLINIC_ADMIN"),
   cancelClinicAppointment,
+);
+
+router.get(
+  "/clinic/stats",
+  authenticate,
+  authorize("CLINIC_ADMIN"),
+  getClinicStats,
 );
 
 export default router;

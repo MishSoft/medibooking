@@ -13,7 +13,7 @@ router.get("/doctors", getDoctors);
 router.get(
   "/doctors/:id/slots",
   authenticate,
-  authorize("PATIENT"),
+  authorize("PATIENT", "CLINIC_ADMIN"),
   getDoctorsSlots,
 );
 

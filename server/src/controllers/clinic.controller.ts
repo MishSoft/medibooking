@@ -3,8 +3,11 @@ import { prisma } from "../db/prisma";
 import { paramsSchema } from "../schemas/appointment.schema";
 import { z } from "zod";
 import { DateTime } from "luxon";
-import { CLINIC_TZ, getClinicNow, validateScheduledSlot } from "../config/booking";
-
+import {
+  CLINIC_TZ,
+  getClinicNow,
+  validateScheduledSlot,
+} from "../config/booking";
 
 export const getClinics = async (_req: Request, res: Response) => {
   try {
@@ -243,8 +246,6 @@ export const updateClinicDoctorSchedule = async (
   }
 };
 
-
-
 export const getClinicAppointments = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
@@ -331,8 +332,14 @@ export const getClinicAppointments = async (req: Request, res: Response) => {
           clinicId: clinic.id,
         },
         ...(doctorId ? { doctorId } : {}),
-        ...(fromDate ? { startAt: { gte: fromDate.toUTC().toJSDate() } } : {}),
-        ...(toDate ? { startAt: { lt: toDate.toUTC().toJSDate() } } : {}),
+        ...(fromDate || toDate
+          ? {
+              startAt: {
+                ...(fromDate ? { gte: fromDate.toUTC().toJSDate() } : {}),
+                ...(toDate ? { lt: toDate.toUTC().toJSDate() } : {}),
+              },
+            }
+          : {}),
       },
       select: {
         id: true,
@@ -390,7 +397,6 @@ export const getClinicAppointments = async (req: Request, res: Response) => {
     });
   }
 };
-
 
 export const rescheduleClinicAppointment = async (
   req: Request,
@@ -647,8 +653,6 @@ export const rescheduleClinicAppointment = async (
   }
 };
 
-
-
 export const cancelClinicAppointment = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
@@ -788,6 +792,100 @@ export const cancelClinicAppointment = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error cancelling clinic appointment:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+    });
+  }
+};
+
+
+
+export const getClinicStats = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized.",
+      });
+    }
+
+    const clinic = await prisma.clinic.findUnique({
+      where: { adminId: userId },
+      select: { id: true },
+    });
+
+    if (!clinic) {
+      return res.status(404).json({
+        success: false,
+        message: "Clinic not found.",
+      });
+    }
+
+    const appointmentWhere = {
+      doctor: {
+        clinicId: clinic.id,
+      },
+    };
+
+    const [
+      doctorsCount,
+      appointmentsCount,
+      pendingCount,
+      scheduledCount,
+      completedCount,
+      cancelledCount,
+    ] = await Promise.all([
+      prisma.doctorProfile.count({
+        where: { clinicId: clinic.id },
+      }),
+      prisma.appointment.count({
+        where: appointmentWhere,
+      }),
+      prisma.appointment.count({
+        where: {
+          ...appointmentWhere,
+          status: "PENDING",
+        },
+      }),
+      prisma.appointment.count({
+        where: {
+          ...appointmentWhere,
+          status: "SCHEDULED",
+        },
+      }),
+      prisma.appointment.count({
+        where: {
+          ...appointmentWhere,
+          status: "COMPLETED",
+        },
+      }),
+      prisma.appointment.count({
+        where: {
+          ...appointmentWhere,
+          status: "CANCELLED",
+        },
+      }),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        doctorsCount,
+        appointmentsCount,
+        appointmentsByStatus: {
+          pending: pendingCount,
+          scheduled: scheduledCount,
+          completed: completedCount,
+          cancelled: cancelledCount,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching clinic stats:", error);
 
     return res.status(500).json({
       success: false,
