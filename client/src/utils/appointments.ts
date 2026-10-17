@@ -32,6 +32,16 @@ export const getAppointmentsOn = (appointments: Appointment[], day: Date) =>
     .filter((item) => isSameDay(new Date(item.startsAt), day))
     .sort(byStartAsc);
 
+// Finished visits only; started-but-open visits stay on the doctor's schedule
+export const getVisitHistory = (appointments: Appointment[]) =>
+  appointments
+    .filter(
+      (item) =>
+        item.status === AppointmentStatus.COMPLETED ||
+        item.status === AppointmentStatus.CANCELLED,
+    )
+    .sort((a, b) => byStartAsc(b, a));
+
 export const getPastAppointments = (appointments: Appointment[]) =>
   appointments
     .filter((item) => !isUpcoming(item))
