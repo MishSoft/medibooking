@@ -308,6 +308,14 @@ export class AuthService {
                 name: true,
               },
             },
+            schedule: {
+              select: {
+                workingDays: true,
+                startTime: true,
+                endTime: true,
+                slotMinutes: true,
+              },
+            },
           },
         },
         managedClinic: true,
