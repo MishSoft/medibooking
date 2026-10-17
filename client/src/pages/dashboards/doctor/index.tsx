@@ -13,12 +13,12 @@ import ScheduleSection from "../../../components/doctor/ScheduleSection";
 import PatientHistorySection from "../../../components/doctor/PatientHistorySection";
 import DiagnosesAndPrescriptionsSection from "../../../components/doctor/DiagnosesAndPrescriptionsSection";
 
-type DoctorTabId = "schedule" | "patients" | "diagnoses";
+type DoctorTabId = "schedule" | "patients" | "prescriptions";
 
 const doctorTabs: DashboardTab<DoctorTabId>[] = [
   { id: "schedule", label: "Schedule", icon: PractitionerCalendarIcon },
   { id: "patients", label: "Patient History", icon: RecordsFolderIcon },
-  { id: "diagnoses", label: "Diagnoses & Prescriptions", icon: PillIcon },
+  { id: "prescriptions", label: "Prescriptions", icon: PillIcon },
 ];
 
 const isDoctorTab = (value: string | null): value is DoctorTabId =>
@@ -33,7 +33,7 @@ function DoctorDashboardPage() {
   const sections: Record<DoctorTabId, ReactNode> = {
     schedule: <ScheduleSection />,
     patients: <PatientHistorySection />,
-    diagnoses: <DiagnosesAndPrescriptionsSection />,
+    prescriptions: <DiagnosesAndPrescriptionsSection />,
   };
 
   return (
