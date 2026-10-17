@@ -11,7 +11,7 @@ import DashboardTabs, {
 import Panel from "../../../shared/ui/Panel";
 import ScheduleSection from "../../../components/doctor/ScheduleSection";
 import PatientHistorySection from "../../../components/doctor/PatientHistorySection";
-import DiagnosesAndPrescriptionsSection from "../../../components/doctor/DiagnosesAndPrescriptionsSection";
+import PrescriptionsSection from "../../../components/doctor/PrescriptionsSection";
 
 type DoctorTabId = "schedule" | "patients" | "prescriptions";
 
@@ -33,7 +33,7 @@ function DoctorDashboardPage() {
   const sections: Record<DoctorTabId, ReactNode> = {
     schedule: <ScheduleSection />,
     patients: <PatientHistorySection />,
-    prescriptions: <DiagnosesAndPrescriptionsSection />,
+    prescriptions: <PrescriptionsSection />,
   };
 
   return (

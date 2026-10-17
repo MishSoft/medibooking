@@ -11,7 +11,7 @@ import PrescriptionFormModal from "./PrescriptionFormModal";
 // "new" opens the form for a new prescription; a Prescription opens it for editing
 type FormTarget = "new" | Prescription | null;
 
-function DiagnosesAndPrescriptionsSection() {
+function PrescriptionsSection() {
   const [formTarget, setFormTarget] = useState<FormTarget>(null);
   const { data = [], isPending, error } = useDoctorPrescriptions();
 
@@ -59,4 +59,4 @@ function DiagnosesAndPrescriptionsSection() {
   );
 }
 
-export default DiagnosesAndPrescriptionsSection;
+export default PrescriptionsSection;
