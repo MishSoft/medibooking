@@ -13,7 +13,7 @@ function DoctorAppointmentCard({
   appointment,
   onComplete,
 }: DoctorAppointmentCardProps) {
-  const { patient, status, notes } = appointment;
+  const { patient, status, notes, diagnosis } = appointment;
   const startsAt = new Date(appointment.startsAt);
 
   return (
@@ -40,6 +40,11 @@ function DoctorAppointmentCard({
           <p className="text-body-sm text-on-surface-variant">
             {format(startsAt, "EEEE, d MMMM yyyy")}
           </p>
+          {diagnosis && (
+            <p className="text-body-sm text-on-surface">
+              <span className="font-semibold">Diagnosis:</span> {diagnosis}
+            </p>
+          )}
           {notes && <p className="text-body-sm text-on-surface">{notes}</p>}
         </div>
       </div>
