@@ -5,6 +5,7 @@ import {
   createAppointment,
   updateAppointmentStatus,
   getDoctorAppointments,
+  updateAppointmentRecord,
 } from "../controllers/appointment.controller";
 
 const router = Router();
@@ -39,6 +40,14 @@ router.patch(
   authenticate,
   authorize("DOCTOR"),
   updateAppointmentStatus,
+);
+
+// Doctor: edit diagnosis and notes of a completed visit
+router.patch(
+  "/appointments/:id/record",
+  authenticate,
+  authorize("DOCTOR"),
+  updateAppointmentRecord,
 );
 
 export default router;

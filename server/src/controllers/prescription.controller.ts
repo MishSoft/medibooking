@@ -274,7 +274,7 @@ export const updatePrescription = async (
     if (typeof prescriptionId !== "string") {
       return res.status(400).json({
         success: false,
-        message: "Prescription ID არასწორია",
+        message: "Prescription ID must be a string.",
       });
     }
 

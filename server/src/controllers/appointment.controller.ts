@@ -534,3 +534,160 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+export const updateAppointmentRecord = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authorization is required.",
+      });
+    }
+
+    const params = paramsSchema.safeParse(req.params);
+
+    if (!params.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid appointment ID.",
+        error: params.error.format(),
+      });
+    }
+
+    const { id } = params.data;
+    const body: unknown = req.body;
+
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
+      return res.status(400).json({
+        success: false,
+        message: "Request body must be an object.",
+      });
+    }
+
+    const record = body as Record<string, unknown>;
+    const allowedFields = ["diagnosis", "notes"];
+
+    if (
+      Object.keys(record).length === 0 ||
+      Object.keys(record).some((key) => !allowedFields.includes(key))
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Provide diagnosis or notes. No other fields are allowed.",
+      });
+    }
+
+    for (const field of allowedFields) {
+      if (
+        field in record &&
+        record[field] !== null &&
+        typeof record[field] !== "string"
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: `${field} must be a string or null.`,
+        });
+      }
+    }
+
+    const doctor = await prisma.doctorProfile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+
+    if (!doctor) {
+      return res.status(403).json({
+        success: false,
+        message: "Only doctors can edit visit records.",
+      });
+    }
+
+    const appointment = await prisma.appointment.findFirst({
+      where: {
+        id,
+        doctorId: doctor.id,
+      },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Appointment not found.",
+      });
+    }
+
+    if (appointment.status !== "COMPLETED") {
+      return res.status(409).json({
+        success: false,
+        message: "Only completed appointments can be edited.",
+      });
+    }
+
+    const data = {
+      ...(Object.prototype.hasOwnProperty.call(record, "diagnosis")
+        ? {
+            diagnosis:
+              typeof record.diagnosis === "string"
+                ? record.diagnosis.trim() || null
+                : null,
+          }
+        : {}),
+      ...(Object.prototype.hasOwnProperty.call(record, "notes")
+        ? {
+            notes:
+              typeof record.notes === "string"
+                ? record.notes.trim() || null
+                : null,
+          }
+        : {}),
+    };
+
+    // Update only if the appointment is still completed
+    // and belongs to this doctor.
+    const result = await prisma.appointment.updateMany({
+      where: {
+        id: appointment.id,
+        doctorId: doctor.id,
+        status: "COMPLETED",
+      },
+      data,
+    });
+
+    if (result.count === 0) {
+      return res.status(409).json({
+        success: false,
+        message: "The visit can no longer be edited.",
+      });
+    }
+
+    const updatedAppointment = await prisma.appointment.findUnique({
+      where: { id: appointment.id },
+      select: {
+        id: true,
+        status: true,
+        diagnosis: true,
+        notes: true,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Visit record updated successfully.",
+      data: updatedAppointment,
+    });
+  } catch (error: unknown) {
+    console.error("Error updating appointment record:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+    });
+  }
+};
