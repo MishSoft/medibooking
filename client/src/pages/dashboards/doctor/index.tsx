@@ -1,7 +1,6 @@
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useSearchParams } from "react-router";
 import {
-  ClockHistoryIcon,
   PillIcon,
   PractitionerCalendarIcon,
   RecordsFolderIcon,

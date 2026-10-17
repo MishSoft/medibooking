@@ -1,36 +1,28 @@
 import { useState } from "react";
-import {
-  useAddPrescription,
-  useDoctorPrescriptions,
-} from "../../hooks/usePrescriptions";
 import { PillIcon } from "../../assets/icons/Icons";
+import { useDoctorPrescriptions } from "../../hooks/usePrescriptions";
+import type { Prescription } from "../../types/prescription";
 import Button from "../../shared/ui/Button";
-import QueryState from "../../shared/ui/QueryState";
 import EmptyState from "../../shared/ui/EmptyState";
-import FieldError from "../../shared/ui/FieldError";
+import QueryState from "../../shared/ui/QueryState";
 import PrescriptionCard from "./PrescriptionCard";
-import AddPrescriptionModal from "./AddPrescriptionModal";
+import PrescriptionFormModal from "./PrescriptionFormModal";
+
+// "new" opens the form for a new prescription; a Prescription opens it for editing
+type FormTarget = "new" | Prescription | null;
 
 function DiagnosesAndPrescriptionsSection() {
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [formTarget, setFormTarget] = useState<FormTarget>(null);
   const { data = [], isPending, error } = useDoctorPrescriptions();
-  const addPrescription = useAddPrescription();
-
-  const handleAddPrescription = async (formData: any) => {
-    await addPrescription.mutateAsync(formData);
-    setShowAddModal(false);
-  };
 
   return (
     <QueryState error={error} isPending={isPending}>
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-body-md text-on-surface-variant">
-            {data.length} prescription{data.length === 1 ? "" : "s"}
+            {data.length} prescription{data.length === 1 ? "" : "s"} issued
           </p>
-          <Button onClick={() => setShowAddModal(true)}>
-            Add Prescription
-          </Button>
+          <Button onClick={() => setFormTarget("new")}>Add Prescription</Button>
         </div>
 
         {data.length > 0 ? (
@@ -38,6 +30,7 @@ function DiagnosesAndPrescriptionsSection() {
             {data.map((prescription) => (
               <PrescriptionCard
                 key={prescription.id}
+                onEdit={setFormTarget}
                 prescription={prescription}
               />
             ))}
@@ -45,31 +38,23 @@ function DiagnosesAndPrescriptionsSection() {
         ) : (
           <EmptyState
             action={
-              <Button onClick={() => setShowAddModal(true)}>
+              <Button onClick={() => setFormTarget("new")}>
                 Add First Prescription
               </Button>
             }
-            description="Start by adding a new prescription for your patient."
+            description="Prescriptions you issue to your patients will appear here."
             icon={PillIcon}
             title="No prescriptions yet"
           />
         )}
-
-        <FieldError
-          id="add-prescription-error"
-          message={addPrescription.error?.message}
-        />
       </div>
 
-      <AddPrescriptionModal
-        isOpen={showAddModal}
-        onClose={() => {
-          setShowAddModal(false);
-          addPrescription.reset();
-        }}
-        onSubmit={handleAddPrescription}
-        isLoading={addPrescription.isPending}
-      />
+      {formTarget && (
+        <PrescriptionFormModal
+          onClose={() => setFormTarget(null)}
+          prescription={formTarget === "new" ? undefined : formTarget}
+        />
+      )}
     </QueryState>
   );
 }
