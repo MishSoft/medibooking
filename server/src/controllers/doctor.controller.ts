@@ -1,3 +1,4 @@
+
 import { Request, Response } from "express";
 import { Prisma, prisma } from "../db/prisma";
 import {
@@ -6,13 +7,12 @@ import {
 } from "../schemas/doctor.schema";
 import {
   CLINIC_TZ,
-  generateDaySlots,
-  validateSlot,
   getClinicNow,
   generateScheduleSlots,
   MAX_MONTHS_AHEAD,
 } from "../config/booking";
 import { DateTime } from "luxon";
+
 export const getDoctorSpecialties = async (req: Request, res: Response) => {
   try {
     const doctors = await prisma.doctorProfile.findMany({
@@ -103,6 +103,14 @@ export const getDoctors = async (req: Request, res: Response) => {
             address: true,
           },
         },
+        schedule: {
+          select: {
+            workingDays: true,
+            startTime: true,
+            endTime: true,
+            slotMinutes: true,
+          },
+        },
       },
     });
 
@@ -119,7 +127,6 @@ export const getDoctors = async (req: Request, res: Response) => {
     });
   }
 };
-
 
 export const getDoctorsSlots = async (req: Request, res: Response) => {
   try {
