@@ -1,15 +1,8 @@
 import type { Appointment } from "./appointment";
-import type { Doctor } from "./doctor";
+import type { Doctor, DoctorSchedule } from "./doctor";
 
-// 0 = Sunday … 6 = Saturday (Date#getDay)
-export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
-
-export type DoctorSchedule = {
-  workingDays: Weekday[];
-  startTime: string; // "HH:mm", clinic time
-  endTime: string; // "HH:mm", clinic time
-  slotMinutes: number;
-};
+// Schedule types live with the doctor; re-exported for existing imports
+export type { DoctorSchedule, Weekday } from "./doctor";
 
 export type ClinicDoctor = Doctor & {
   email: string;
