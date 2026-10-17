@@ -10,12 +10,24 @@ type TimeSlotPickerProps = {
 };
 
 function TimeSlotPicker({ slots, selected, onSelect }: TimeSlotPickerProps) {
+  // No slots at all = the doctor doesn't work that day
+  if (slots.length === 0) {
+    return (
+      <EmptyState
+        description="The doctor doesn't see patients on this day. Please pick another day."
+        icon={ClockHistoryIcon}
+        title="Not working this day"
+      />
+    );
+  }
+
+  // Slots exist but none are free = taken or already past
   if (!slots.some((slot) => slot.available)) {
     return (
       <EmptyState
-        description="Please pick another day."
+        description="All time slots for this day are booked or have already passed. Please pick another day."
         icon={ClockHistoryIcon}
-        title="No available slots"
+        title="Fully booked"
       />
     );
   }

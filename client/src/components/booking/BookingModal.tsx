@@ -5,7 +5,7 @@ import { ApiError } from "../../api/client";
 import { BadgeCheckIcon } from "../../assets/icons/Icons";
 import { useBookAppointment } from "../../hooks/useAppointments";
 import { doctorsQueryKey, useDoctorSlots } from "../../hooks/useDoctors";
-import type { Doctor } from "../../types/doctor";
+import type { Doctor, Weekday } from "../../types/doctor";
 import Button from "../../shared/ui/Button";
 import DatePicker from "../../shared/ui/DatePicker";
 import FieldError from "../../shared/ui/FieldError";
@@ -38,6 +38,14 @@ function BookingModal({ doctor, onClose }: BookingModalProps) {
 
   const today = startOfToday();
   const lastBookableDay = addMonths(today, BOOKING_WINDOW_MONTHS);
+
+  // null = doctor has no working hours; undefined = schedule not loaded
+  const schedule = doctor?.schedule;
+  const hasNoSchedule = schedule === null;
+  const isDayOff = (day: Date) =>
+    schedule
+      ? !schedule.workingDays.includes(day.getDay() as Weekday)
+      : isWeekend(day);
 
   const refreshSlots = () =>
     queryClient.invalidateQueries({
@@ -127,11 +135,11 @@ function BookingModal({ doctor, onClose }: BookingModalProps) {
       <div className="grid gap-6 md:grid-cols-[auto_1fr]">
         <div className="flex justify-center md:block">
           <DatePicker
-            disabled={[
-              { before: today },
-              { after: lastBookableDay },
-              isWeekend,
-            ]}
+            disabled={
+              hasNoSchedule
+                ? true
+                : [{ before: today }, { after: lastBookableDay }, isDayOff]
+            }
             endMonth={lastBookableDay}
             onSelect={handleDateSelect}
             selected={date}
@@ -141,7 +149,12 @@ function BookingModal({ doctor, onClose }: BookingModalProps) {
 
         <div className="space-y-4">
           <BookingSummary doctor={doctor} start={slot} />
-          {date ? (
+          {hasNoSchedule ? (
+            <p className="text-body-sm text-warning" role="status">
+              This doctor has no working hours set yet. Please check back later
+              or choose another doctor.
+            </p>
+          ) : date ? (
             <QueryState error={slotsError} isPending={isSlotsPending}>
               <TimeSlotPicker
                 onSelect={handleSlotSelect}

@@ -1,8 +1,10 @@
 import {
   ClinicBuildingIcon,
+  ClockHistoryIcon,
   PractitionerCalendarIcon,
 } from "../../assets/icons/Icons";
 import type { Doctor } from "../../types/doctor";
+import { formatSchedule } from "../../utils/schedule";
 import Avatar from "../../shared/ui/Avatar";
 import Button from "../../shared/ui/Button";
 import Tag from "../../shared/ui/Tag";
@@ -47,6 +49,22 @@ function DoctorCard({ doctor, onBook }: DoctorCardProps) {
           {doctor.clinic.address}
         </span>
       </p>
+
+      {doctor.schedule !== undefined && (
+        <p className="flex items-center gap-2 text-body-sm text-on-surface-variant">
+          <ClockHistoryIcon
+            aria-hidden="true"
+            className="h-4 w-4 shrink-0 text-primary"
+          />
+          {doctor.schedule ? (
+            <span className="font-code text-code-sm text-on-surface">
+              {formatSchedule(doctor.schedule)}
+            </span>
+          ) : (
+            <span className="text-warning">No working hours set</span>
+          )}
+        </p>
+      )}
 
       {onBook && (
         <Button

@@ -1,5 +1,11 @@
 import type { TimeSlot } from "../types/booking";
-import type { Clinic, Doctor, DoctorFiltersValue } from "../types/doctor";
+import type {
+  Clinic,
+  Doctor,
+  DoctorFiltersValue,
+  DoctorSchedule,
+  Weekday,
+} from "../types/doctor";
 import type { ApiResponse } from "./auth.api";
 import { apiRequest } from "./client";
 
@@ -17,6 +23,15 @@ export type DoctorDto = {
   bio?: string | null;
   user: { firstName: string; lastName: string };
   clinic: ClinicDto;
+  // Only on GET /api/doctors; null = no schedule configured
+  schedule?: DoctorScheduleDto | null;
+};
+
+export type DoctorScheduleDto = {
+  workingDays: number[]; // 1 = Monday … 7 = Sunday (ISO / Luxon)
+  startTime: string;
+  endTime: string;
+  slotMinutes: number;
 };
 
 export type TimeSlotDto = {
@@ -24,7 +39,21 @@ export type TimeSlotDto = {
   available: boolean;
 };
 
-export const toClinic =(dto: ClinicDto): Clinic => ({
+// Server weekdays are 1 = Mon … 7 = Sun; client uses Date#getDay (0 = Sun)
+export const fromServerWeekdays = (days: number[]): Weekday[] =>
+  days.map((day) => (day % 7) as Weekday);
+
+export const toServerWeekdays = (days: Weekday[]): number[] =>
+  days.map((day) => (day === 0 ? 7 : day));
+
+export const toDoctorSchedule = (dto: DoctorScheduleDto): DoctorSchedule => ({
+  workingDays: fromServerWeekdays(dto.workingDays),
+  startTime: dto.startTime,
+  endTime: dto.endTime,
+  slotMinutes: dto.slotMinutes,
+});
+
+export const toClinic = (dto: ClinicDto): Clinic => ({
   id: dto.id,
   name: dto.name,
   address: dto.address ?? "",
@@ -38,6 +67,11 @@ export const toDoctor = (dto: DoctorDto): Doctor => ({
   experienceYears: dto.yearsOfPractice,
   bio: dto.bio ?? undefined,
   clinic: toClinic(dto.clinic),
+  // Keep "not sent" (undefined) distinct from "no schedule" (null)
+  schedule:
+    dto.schedule === undefined
+      ? undefined
+      : dto.schedule && toDoctorSchedule(dto.schedule),
 });
 
 const toQueryString = (filters: DoctorFiltersValue) => {
