@@ -1,8 +1,10 @@
+
 import { Router } from "express";
 import { authenticate, authorize } from "../middleware/auth.middleware";
 import {
   getDoctorPrescriptions,
   createPrescription,
+  updatePrescription,
   getDoctorPatients,
 } from "../controllers/prescription.controller";
 
@@ -32,4 +34,13 @@ router.post(
   createPrescription,
 );
 
+// Doctor: update their own prescription
+router.patch(
+  "/prescriptions/:id",
+  authenticate,
+  authorize("DOCTOR"),
+  updatePrescription,
+);
+
 export default router;
+

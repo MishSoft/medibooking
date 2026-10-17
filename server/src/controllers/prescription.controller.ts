@@ -1,8 +1,11 @@
+
 import { Request, Response } from "express";
 import { prisma } from "../db/prisma";
 
-
-export const getDoctorPrescriptions = async (req: Request, res: Response) => {
+export const getDoctorPrescriptions = async (
+  req: Request,
+  res: Response,
+) => {
   try {
     const userId = req.user?.userId;
 
@@ -84,8 +87,10 @@ export const getDoctorPrescriptions = async (req: Request, res: Response) => {
   }
 };
 
-
-export const createPrescription = async (req: Request, res: Response) => {
+export const createPrescription = async (
+  req: Request,
+  res: Response,
+) => {
   try {
     const userId = req.user?.userId;
 
@@ -228,7 +233,7 @@ export const createPrescription = async (req: Request, res: Response) => {
       message: "Prescription created successfully.",
       data: prescription,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("createPrescription error:", error);
 
     return res.status(500).json({
@@ -238,9 +243,222 @@ export const createPrescription = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Update an existing prescription owned by the authenticated doctor.
+ * Only editable prescription fields are accepted.
+ */
+export const updatePrescription = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authorization is required.",
+      });
+    }
+
+    const prescriptionId = req.params.id;
+
+    if (!prescriptionId) {
+      return res.status(400).json({
+        success: false,
+        message: "Prescription ID is required.",
+      });
+    }
 
 
-export const getDoctorPatients = async (req: Request, res: Response) => {
+    if (typeof prescriptionId !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Prescription ID არასწორია",
+      });
+    }
+
+    const body: unknown = req.body;
+
+    if (
+      !body ||
+      typeof body !== "object" ||
+      Array.isArray(body)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Request body must be a JSON object.",
+      });
+    }
+
+    const input = body as Record<string, unknown>;
+
+    const allowedFields = new Set([
+      "medication",
+      "dosage",
+      "frequency",
+      "instructions",
+      "validUntil",
+    ]);
+
+    const unknownFields = Object.keys(input).filter(
+      (key) => !allowedFields.has(key),
+    );
+
+    if (unknownFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Request contains unsupported fields.",
+        fields: unknownFields,
+      });
+    }
+
+    if (Object.keys(input).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one field must be provided.",
+      });
+    }
+
+    const doctor = await prisma.doctorProfile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+
+    if (!doctor) {
+      return res.status(403).json({
+        success: false,
+        message: "Doctor profile not found.",
+      });
+    }
+
+    // Restrict access to prescriptions created by this doctor.
+    const existingPrescription = await prisma.prescription.findFirst({
+      where: {
+        id: prescriptionId,
+        doctorId: doctor.id,
+      },
+      select: {
+        id: true,
+        issuedAt: true,
+      },
+    });
+
+    if (!existingPrescription) {
+      return res.status(404).json({
+        success: false,
+        message: "Prescription not found.",
+      });
+    }
+
+    const data: {
+      medication?: string;
+      dosage?: string;
+      frequency?: string;
+      instructions?: string | null;
+      validUntil?: Date;
+    } = {};
+
+    for (const field of [
+      "medication",
+      "dosage",
+      "frequency",
+    ] as const) {
+      if (Object.prototype.hasOwnProperty.call(input, field)) {
+        const value = input[field];
+
+        if (typeof value !== "string" || !value.trim()) {
+          return res.status(400).json({
+            success: false,
+            message: `${field} must be a non-empty string.`,
+          });
+        }
+
+        data[field] = value.trim();
+      }
+    }
+
+    if (Object.prototype.hasOwnProperty.call(input, "instructions")) {
+      const value = input.instructions;
+
+      if (value !== null && typeof value !== "string") {
+        return res.status(400).json({
+          success: false,
+          message: "instructions must be a string or null.",
+        });
+      }
+
+      // Explicit null or an empty string clears the instructions.
+      data.instructions =
+        typeof value === "string" ? value.trim() || null : null;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(input, "validUntil")) {
+      const value = input.validUntil;
+
+      if (typeof value !== "string" || !value.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: "validUntil must be a valid date string.",
+        });
+      }
+
+      const parsedValidUntil = new Date(value);
+
+      if (Number.isNaN(parsedValidUntil.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: "validUntil must be a valid date.",
+        });
+      }
+
+      if (parsedValidUntil <= existingPrescription.issuedAt) {
+        return res.status(400).json({
+          success: false,
+          message: "validUntil must be later than issuedAt.",
+        });
+      }
+
+      data.validUntil = parsedValidUntil;
+    }
+
+    const updatedPrescription = await prisma.prescription.update({
+      where: {
+        id: existingPrescription.id,
+      },
+      data,
+      select: {
+        id: true,
+        patientId: true,
+        doctorId: true,
+        medication: true,
+        dosage: true,
+        frequency: true,
+        instructions: true,
+        issuedAt: true,
+        validUntil: true,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Prescription updated successfully.",
+      data: updatedPrescription,
+    });
+  } catch (error: unknown) {
+    console.error("updatePrescription error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update prescription.",
+    });
+  }
+};
+
+export const getDoctorPatients = async (
+  req: Request,
+  res: Response,
+) => {
   try {
     const userId = req.user?.userId;
 
@@ -298,3 +516,4 @@ export const getDoctorPatients = async (req: Request, res: Response) => {
     });
   }
 };
+
