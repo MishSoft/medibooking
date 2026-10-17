@@ -25,7 +25,7 @@ export const getClinics = async (_req: Request, res: Response) => {
 
     return res.status(500).json({
       success: false,
-      message: "სერვერის შეცდომა.",
+      message: "Internal server error.",
     });
   }
 };

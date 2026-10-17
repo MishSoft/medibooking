@@ -1,6 +1,5 @@
-import { mockDelay } from "../mocks/delay";
-import { mockPrescriptions } from "../mocks/prescriptions";
 import type { Prescription } from "../types/prescription";
+import { toPatient, type PatientDto } from "./appointments.api";
 import type { ApiResponse } from "./auth.api";
 import { apiRequest } from "./client";
 import { toDoctor, type DoctorDto } from "./doctors.api";
@@ -15,11 +14,14 @@ export type PrescriptionDto = {
   issuedAt: string;
   validUntil: string;
   doctor: DoctorDto;
+  // Returned by GET /api/prescriptions (doctor) only
+  patient?: PatientDto;
 };
 
 export const toPrescription = (dto: PrescriptionDto): Prescription => ({
   id: dto.id,
   doctor: toDoctor(dto.doctor),
+  patient: dto.patient && toPatient(dto.patient),
   medication: dto.medication,
   dosage: dto.dosage,
   frequency: dto.frequency,
@@ -28,8 +30,22 @@ export const toPrescription = (dto: PrescriptionDto): Prescription => ({
   validUntil: dto.validUntil,
 });
 
-export type CreatePrescriptionPayload = Omit<Prescription, "id">;
+// The doctor is taken from the session; issuedAt defaults to now on the server
+export type CreatePrescriptionPayload = {
+  patientId: string;
+  medication: string;
+  dosage: string;
+  frequency: string;
+  instructions?: string;
+  validUntil: string; // ISO date
+};
 
+// Empty string clears the instructions
+export type UpdatePrescriptionPayload = Partial<
+  Omit<CreatePrescriptionPayload, "patientId">
+>;
+
+// Create/update responses omit doctor and patient, so callers refetch the list
 export const prescriptionsApi = {
   // Signed-in patient's own prescriptions
   listMine: async (): Promise<Prescription[]> => {
@@ -38,18 +54,22 @@ export const prescriptionsApi = {
     );
     return (response.data ?? []).map(toPrescription);
   },
-  // Mock-backed (doctor dashboard) — no server endpoint yet
-  list: async (): Promise<Prescription[]> => {
-    await mockDelay();
-    return [...mockPrescriptions];
+  // Signed-in doctor's issued prescriptions
+  listForDoctor: async (): Promise<Prescription[]> => {
+    const response =
+      await apiRequest<ApiResponse<PrescriptionDto[]>>("api/prescriptions");
+    return (response.data ?? []).map(toPrescription);
   },
-  create: async (payload: CreatePrescriptionPayload): Promise<Prescription> => {
-    await mockDelay();
-    const prescription: Prescription = {
-      id: crypto.randomUUID(),
-      ...payload,
-    };
-    mockPrescriptions.push(prescription);
-    return prescription;
+  create: async (payload: CreatePrescriptionPayload) => {
+    await apiRequest<ApiResponse>("api/prescriptions", {
+      method: "POST",
+      body: payload,
+    });
+  },
+  update: async (id: string, payload: UpdatePrescriptionPayload) => {
+    await apiRequest<ApiResponse>(`api/prescriptions/${id}`, {
+      method: "PATCH",
+      body: payload,
+    });
   },
 };

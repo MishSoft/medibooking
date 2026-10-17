@@ -29,7 +29,7 @@ export const registerPatientController = async (
 
     return res.status(201).json({
       success: true,
-      message: "პაციენტი წარმატებით დარეგისტრირდა",
+      message: "Patient registered successfully.",
       data: result,
     });
   } catch (error) {
@@ -58,7 +58,7 @@ export const registerClinicController = async (
 
     return res.status(201).json({
       success: true,
-      message: "კლინიკა წარმატებით დარეგისტრირდა",
+      message: "Clinic registered successfully.",
       data: result,
     });
   } catch (error) {
@@ -91,7 +91,7 @@ export const registerDoctorController = async (
 
     return res.status(201).json({
       success: true,
-      message: "ექიმი წარმატებით დარეგისტრირდა",
+      message: "Doctor registered successfully.",
       data: result,
     });
   } catch (error) {
@@ -120,7 +120,7 @@ export const loginController = async (
 
     return res.status(200).json({
       success: true,
-      message: "ავტორიზაცია წარმატებით გაიარა",
+      message: "Signed in successfully.",
       data: result,
     });
   } catch (error) {
@@ -137,7 +137,7 @@ export const loginController = async (
       message:
         error instanceof Error
           ? error.message
-          : "ავტორიზაციისას დაფიქსირდა შეცდომა",
+          : "Sign-in failed.",
     });
   }
 };
@@ -149,7 +149,7 @@ export const getMeController = async (req: Request, res: Response) => {
     if (!userId) {
       return res.status(401).json({
         success: false,
-        message: "არაავტორიზებული მოთხოვნა",
+        message: "Unauthorized request.",
       });
     }
 
@@ -163,7 +163,7 @@ export const getMeController = async (req: Request, res: Response) => {
     return res.status(400).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "შეცდომა პროფილის წამოღებისას",
+        error instanceof Error ? error.message : "Failed to retrieve profile.",
     });
   }
 };

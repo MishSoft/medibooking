@@ -6,7 +6,12 @@ type DatePickerProps = {
   disabled?: Matcher | Matcher[];
   startMonth?: Date;
   endMonth?: Date;
+  // Days to flag with a dot, e.g. days that have appointments
+  marked?: Matcher | Matcher[];
 };
+
+const markedClassName =
+  "relative after:pointer-events-none after:absolute after:bottom-1.5 after:left-1/2 after:h-1 after:w-1 after:-translate-x-1/2 after:rounded-full after:bg-secondary";
 
 // react-day-picker is used unstyled; every part is themed with design tokens
 const dayPickerClassNames = {
@@ -40,12 +45,15 @@ function DatePicker({
   disabled,
   startMonth,
   endMonth,
+  marked,
 }: DatePickerProps) {
   return (
     <DayPicker
       classNames={dayPickerClassNames}
       disabled={disabled}
       endMonth={endMonth}
+      modifiers={marked ? { marked } : undefined}
+      modifiersClassNames={marked ? { marked: markedClassName } : undefined}
       mode="single"
       onSelect={onSelect}
       selected={selected}

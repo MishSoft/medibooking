@@ -35,7 +35,7 @@ export const getDoctorSpecialties = async (req: Request, res: Response) => {
 
     return res.status(500).json({
       success: false,
-      message: (error as Error).message || "სერვერის შეცდომა.",
+      message: (error as Error).message || "Internal server error.",
     });
   }
 };
@@ -123,7 +123,7 @@ export const getDoctors = async (req: Request, res: Response) => {
 
     return res.status(500).json({
       success: false,
-      message: (error as Error).message || "სერვერის შეცდომა.",
+      message: (error as Error).message || "Internal server error.",
     });
   }
 };

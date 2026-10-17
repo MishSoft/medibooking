@@ -308,6 +308,14 @@ export class AuthService {
                 name: true,
               },
             },
+            schedule: {
+              select: {
+                workingDays: true,
+                startTime: true,
+                endTime: true,
+                slotMinutes: true,
+              },
+            },
           },
         },
         managedClinic: true,
@@ -315,7 +323,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new Error("მომხმარებელი ვერ მოიძებნა");
+      throw new Error("User not found.");
     }
 
     return user;

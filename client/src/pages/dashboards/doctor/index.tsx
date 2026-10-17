@@ -1,7 +1,6 @@
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useSearchParams } from "react-router";
 import {
-  ClockHistoryIcon,
   PillIcon,
   PractitionerCalendarIcon,
   RecordsFolderIcon,
@@ -12,14 +11,14 @@ import DashboardTabs, {
 import Panel from "../../../shared/ui/Panel";
 import ScheduleSection from "../../../components/doctor/ScheduleSection";
 import PatientHistorySection from "../../../components/doctor/PatientHistorySection";
-import DiagnosesAndPrescriptionsSection from "../../../components/doctor/DiagnosesAndPrescriptionsSection";
+import PrescriptionsSection from "../../../components/doctor/PrescriptionsSection";
 
-type DoctorTabId = "schedule" | "patients" | "diagnoses";
+type DoctorTabId = "schedule" | "patients" | "prescriptions";
 
 const doctorTabs: DashboardTab<DoctorTabId>[] = [
   { id: "schedule", label: "Schedule", icon: PractitionerCalendarIcon },
   { id: "patients", label: "Patient History", icon: RecordsFolderIcon },
-  { id: "diagnoses", label: "Diagnoses & Prescriptions", icon: PillIcon },
+  { id: "prescriptions", label: "Prescriptions", icon: PillIcon },
 ];
 
 const isDoctorTab = (value: string | null): value is DoctorTabId =>
@@ -34,7 +33,7 @@ function DoctorDashboardPage() {
   const sections: Record<DoctorTabId, ReactNode> = {
     schedule: <ScheduleSection />,
     patients: <PatientHistorySection />,
-    diagnoses: <DiagnosesAndPrescriptionsSection />,
+    prescriptions: <PrescriptionsSection />,
   };
 
   return (
