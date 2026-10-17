@@ -8,7 +8,7 @@ export const getPatientAppointments = async (req: Request, res: Response) => {
     if (!patientId) {
       return res.status(401).json({
         success: false,
-        message: "ავტორიზაცია სავალდებულოა",
+        message: "Authorization is required.",
       });
     }
 
@@ -58,7 +58,7 @@ export const getPatientAppointments = async (req: Request, res: Response) => {
 
     return res.status(500).json({
       success: false,
-      message: (error as Error).message || "სერვერის შეცდომა",
+      message: (error as Error).message || "Internal server error.",
     });
   }
 };
@@ -70,7 +70,7 @@ export const getPatientPrescriptions = async (req: Request, res: Response) => {
     if (!userId) {
       return res.status(401).json({
         success: false,
-        message: "ავტორიზაცია სავალდებულოა",
+        message: "Authorization is required.",
       });
     }
 
@@ -121,7 +121,7 @@ export const getPatientPrescriptions = async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       message:
-        (error as Error).message || "სერვერის შეცდომა რეცეპტების წამოღებისას",
+        (error as Error).message || "Failed to retrieve prescriptions.",
     });
   }
 };

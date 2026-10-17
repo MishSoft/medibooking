@@ -323,7 +323,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new Error("მომხმარებელი ვერ მოიძებნა");
+      throw new Error("User not found.");
     }
 
     return user;
