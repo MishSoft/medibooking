@@ -9,6 +9,7 @@ import {
   PatientRegisterInput,
 } from "../schemas/auth.schema";
 import { Request, Response } from "express";
+
 const JWT_SECRET = process.env.JWT_SECRET;
 
 if (!JWT_SECRET) {
@@ -31,6 +32,7 @@ export class AuthService {
       const existingPersonalId = await prisma.patientProfile.findUnique({
         where: { personalId: data.personalId },
       });
+
       if (existingPersonalId) {
         throw new Error("This personal ID is already used");
       }
@@ -173,7 +175,7 @@ export class AuthService {
       throw new Error("Clinic not found");
     }
 
-    // A clinic admin may only register doctors into the clinic they manage
+    // A clinic admin may only register doctors into the clinic they manage.
     if (clinicExists.adminId !== adminId) {
       throw new Error("You can only register doctors for your own clinic");
     }
@@ -208,6 +210,17 @@ export class AuthService {
         },
       });
 
+      // Automatically create a default schedule for the new doctor.
+      await tx.doctorSchedule.create({
+        data: {
+          doctorId: doctorProfile.id,
+          workingDays: [1, 2, 3, 4, 5],
+          startTime: "09:00",
+          endTime: "17:00",
+          slotMinutes: 30,
+        },
+      });
+
       return { user, doctorProfile };
     });
 
@@ -238,6 +251,7 @@ export class AuthService {
         where: { licenseNo: data.identifier },
         include: { user: true },
       });
+
       if (doctorProfile) {
         user = doctorProfile.user;
       }
@@ -248,6 +262,7 @@ export class AuthService {
     }
 
     const isPasswordValid = await bcrypt.compare(data.password, user.password);
+
     if (!isPasswordValid) {
       throw new Error("Wrong email/license or password");
     }
