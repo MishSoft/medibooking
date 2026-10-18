@@ -6,6 +6,7 @@ import { DateTime } from "luxon";
 import {
   CLINIC_TZ,
   getClinicNow,
+  generateScheduleSlots,
   validateScheduledSlot,
 } from "../config/booking";
 
@@ -802,6 +803,7 @@ export const cancelClinicAppointment = async (req: Request, res: Response) => {
 
 
 
+
 export const getClinicStats = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
@@ -813,6 +815,54 @@ export const getClinicStats = async (req: Request, res: Response) => {
       });
     }
 
+    // Validate the required ISO 8601 date-time query parameters.
+    const querySchema = z.object({
+      from: z.string().datetime({ offset: true }),
+      to: z.string().datetime({ offset: true }),
+    });
+
+    const parsedQuery = querySchema.safeParse(req.query);
+
+    if (!parsedQuery.success) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Both from and to must be valid ISO 8601 date-times with an offset.",
+      });
+    }
+
+    const fromDate = DateTime.fromISO(parsedQuery.data.from, {
+      setZone: true,
+    });
+
+    const toDate = DateTime.fromISO(parsedQuery.data.to, {
+      setZone: true,
+    });
+
+    if (!fromDate.isValid || !toDate.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: "from and to must be valid ISO 8601 date-times.",
+      });
+    }
+
+    if (fromDate.toMillis() >= toDate.toMillis()) {
+      return res.status(400).json({
+        success: false,
+        message: "from must be earlier than to.",
+      });
+    }
+
+    const rangeMilliseconds = toDate.toMillis() - fromDate.toMillis();
+
+    if (rangeMilliseconds > 366 * 24 * 60 * 60 * 1000) {
+      return res.status(400).json({
+        success: false,
+        message: "The requested date range cannot exceed 366 days.",
+      });
+    }
+
+    // Resolve the authenticated administrator's clinic.
     const clinic = await prisma.clinic.findUnique({
       where: { adminId: userId },
       select: { id: true },
@@ -825,62 +875,181 @@ export const getClinicStats = async (req: Request, res: Response) => {
       });
     }
 
+    const from = fromDate.toUTC().toJSDate();
+    const to = toDate.toUTC().toJSDate();
+
+    // One shared date filter: inclusive from, exclusive to.
     const appointmentWhere = {
       doctor: {
         clinicId: clinic.id,
       },
+      startAt: {
+        gte: from,
+        lt: to,
+      },
     };
 
-    const [
-      doctorsCount,
-      appointmentsCount,
-      pendingCount,
-      scheduledCount,
-      completedCount,
-      cancelledCount,
-    ] = await Promise.all([
-      prisma.doctorProfile.count({
-        where: { clinicId: clinic.id },
-      }),
-      prisma.appointment.count({
-        where: appointmentWhere,
-      }),
-      prisma.appointment.count({
-        where: {
-          ...appointmentWhere,
-          status: "PENDING",
+    const now = getClinicNow();
+
+    // Load doctors and their current schedules once.
+    const doctors = await prisma.doctorProfile.findMany({
+      where: { clinicId: clinic.id },
+      select: clinicDoctorSelect,
+      orderBy: {
+        user: { lastName: "asc" },
+      },
+    });
+
+    // Aggregate appointments by doctor and status.
+    const groupedAppointments = await prisma.appointment.groupBy({
+      by: ["doctorId", "status"],
+      where: appointmentWhere,
+      _count: {
+        _all: true,
+      },
+    });
+
+    // Count rescheduled appointments independently of status.
+    const rescheduled = await prisma.appointment.count({
+      where: {
+        ...appointmentWhere,
+        rescheduledFrom: {
+          not: null,
         },
-      }),
-      prisma.appointment.count({
-        where: {
-          ...appointmentWhere,
-          status: "SCHEDULED",
+      },
+    });
+
+    // Only genuinely future appointments count as upcoming.
+    const upcoming = await prisma.appointment.count({
+      where: {
+        ...appointmentWhere,
+        status: {
+          in: ["SCHEDULED", "PENDING"],
         },
-      }),
-      prisma.appointment.count({
-        where: {
-          ...appointmentWhere,
-          status: "COMPLETED",
+        startAt: {
+          gt: now.toUTC().toJSDate(),
+          gte: from,
+          lt: to,
         },
-      }),
-      prisma.appointment.count({
-        where: {
-          ...appointmentWhere,
-          status: "CANCELLED",
-        },
-      }),
-    ]);
+      },
+    });
+
+    type DoctorCounts = {
+      booked: number;
+      completed: number;
+      cancelled: number;
+    };
+
+    const countsByDoctor = new Map<string, DoctorCounts>();
+
+    // Initialize every doctor, including doctors with no appointments.
+    for (const doctor of doctors) {
+      countsByDoctor.set(doctor.id, {
+        booked: 0,
+        completed: 0,
+        cancelled: 0,
+      });
+    }
+
+    let total = 0;
+    let completed = 0;
+    let cancelled = 0;
+    let pending = 0;
+    let scheduled = 0;
+
+    for (const row of groupedAppointments) {
+      const count = row._count._all;
+
+      total += count;
+
+      if (row.status === "COMPLETED") {
+        completed += count;
+      } else if (row.status === "CANCELLED") {
+        cancelled += count;
+      } else if (row.status === "PENDING") {
+        pending += count;
+      } else if (row.status === "SCHEDULED") {
+        scheduled += count;
+      }
+
+      const doctorCounts = countsByDoctor.get(row.doctorId);
+
+      if (!doctorCounts) {
+        continue;
+      }
+
+      if (row.status === "CANCELLED") {
+        doctorCounts.cancelled += count;
+      } else {
+        // Booked includes every non-cancelled appointment,
+        // including completed appointments.
+        doctorCounts.booked += count;
+      }
+
+      if (row.status === "COMPLETED") {
+        doctorCounts.completed += count;
+      }
+    }
+
+    // Calculate schedule capacity across the calendar days touched
+    // by the requested range, using the clinic's timezone.
+    const fromLocal = fromDate.setZone(CLINIC_TZ);
+    const toLocal = toDate.setZone(CLINIC_TZ);
+
+    const firstDay = fromLocal.startOf("day");
+
+    const workload = doctors.map((doctor) => {
+      const counts = countsByDoctor.get(doctor.id)!;
+
+      let capacity = 0;
+
+      if (doctor.schedule) {
+        let day = firstDay;
+
+        while (day.toMillis() < toLocal.toMillis()) {
+          capacity += generateScheduleSlots(day, doctor.schedule).length;
+
+          day = day.plus({ days: 1 });
+        }
+      }
+
+      return {
+        doctor,
+        booked: counts.booked,
+        completed: counts.completed,
+        cancelled: counts.cancelled,
+        capacity,
+        utilisation: capacity > 0 ? counts.booked / capacity : 0,
+      };
+    });
+
+    const totalBooked = workload.reduce((sum, item) => sum + item.booked, 0);
+
+    const totalCapacity = workload.reduce(
+      (sum, item) => sum + item.capacity,
+      0,
+    );
 
     return res.status(200).json({
       success: true,
       data: {
-        doctorsCount,
-        appointmentsCount,
+        total,
+        completed,
+        upcoming,
+        cancelled,
+        rescheduled,
+        cancellationRate: total > 0 ? cancelled / total : 0,
+        utilisation: totalCapacity > 0 ? totalBooked / totalCapacity : 0,
+        workload,
+
+        // Keep the existing fields for backward compatibility.
+        doctorsCount: doctors.length,
+        appointmentsCount: total,
         appointmentsByStatus: {
-          pending: pendingCount,
-          scheduled: scheduledCount,
-          completed: completedCount,
-          cancelled: cancelledCount,
+          pending,
+          scheduled,
+          completed,
+          cancelled,
         },
       },
     });
@@ -893,3 +1062,4 @@ export const getClinicStats = async (req: Request, res: Response) => {
     });
   }
 };
+

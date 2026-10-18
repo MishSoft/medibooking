@@ -460,6 +460,114 @@ const options: swaggerJsdoc.Options = {
           },
         },
       },
+
+      "/api/clinic/stats": {
+        get: {
+          summary: "კლინიკის სტატისტიკა არჩეული პერიოდის მიხედვით",
+          tags: ["Clinic Dashboard"],
+          security: [{ BearerAuth: [] }],
+          parameters: [
+            {
+              name: "from",
+              in: "query",
+              required: true,
+              description: "პერიოდის დასაწყისი, ჩათვლით",
+              schema: {
+                type: "string",
+                format: "date-time",
+              },
+              example: "2026-09-18T20:00:00.000Z",
+            },
+            {
+              name: "to",
+              in: "query",
+              required: true,
+              description: "პერიოდის დასასრული, ჩაუთვლელად",
+              schema: {
+                type: "string",
+                format: "date-time",
+              },
+              example: "2026-10-18T20:00:00.000Z",
+            },
+          ],
+          responses: {
+            200: {
+              description: "კლინიკის სტატისტიკა წარმატებით დაბრუნდა",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: {
+                        type: "boolean",
+                        example: true,
+                      },
+                      data: {
+                        type: "object",
+                        properties: {
+                          total: { type: "integer", example: 412 },
+                          completed: { type: "integer", example: 298 },
+                          upcoming: { type: "integer", example: 41 },
+                          cancelled: { type: "integer", example: 37 },
+                          rescheduled: { type: "integer", example: 19 },
+                          cancellationRate: {
+                            type: "number",
+                            example: 0.0898,
+                          },
+                          utilisation: {
+                            type: "number",
+                            example: 0.4721,
+                          },
+                          workload: {
+                            type: "array",
+                            items: {
+                              type: "object",
+                              properties: {
+                                doctor: {
+                                  type: "object",
+                                  description:
+                                    "ექიმის მონაცემები GET /api/clinic/doctors endpoint-ის ფორმატით",
+                                },
+                                booked: { type: "integer", example: 96 },
+                                completed: { type: "integer", example: 81 },
+                                cancelled: { type: "integer", example: 9 },
+                                capacity: { type: "integer", example: 352 },
+                                utilisation: {
+                                  type: "number",
+                                  example: 0.2727,
+                                },
+                              },
+                            },
+                          },
+                          doctorsCount: { type: "integer", example: 12 },
+                          appointmentsCount: { type: "integer", example: 412 },
+                          appointmentsByStatus: {
+                            type: "object",
+                            properties: {
+                              pending: { type: "integer", example: 36 },
+                              scheduled: { type: "integer", example: 298 },
+                              completed: { type: "integer", example: 41 },
+                              cancelled: { type: "integer", example: 37 },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            400: {
+              description:
+                "თარიღები აკლია ან არასწორია, from >= to, ან პერიოდი 366 დღეზე მეტია",
+            },
+            401: { description: "არაავტორიზებული" },
+            403: { description: "წვდომა აკრძალულია" },
+            404: { description: "კლინიკა ვერ მოიძებნა" },
+            500: { description: "სერვერის შიდა შეცდომა" },
+          },
+        },
+      },
     },
   },
   apis: [],
