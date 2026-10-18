@@ -15,7 +15,7 @@ type PatientVisitCardProps = {
 function PatientVisitCard({ appointment, onEdit }: PatientVisitCardProps) {
   const { patient, status, notes, diagnosis } = appointment;
   const startsAt = new Date(appointment.startsAt);
-  const canEdit = !!onEdit && status === AppointmentStatus.COMPLETED;
+  const isCompleted = status === AppointmentStatus.COMPLETED;
 
   return (
     <article className="flex flex-col gap-3 rounded-xl bg-surface-container p-4 shadow-elevation-1 sm:p-5">
@@ -29,7 +29,7 @@ function PatientVisitCard({ appointment, onEdit }: PatientVisitCardProps) {
           </time>
           <AppointmentStatusBadge status={status} />
         </div>
-        {canEdit && (
+        {onEdit && isCompleted && (
           <Button onClick={() => onEdit(appointment)} variant="secondary">
             Edit Record
           </Button>
@@ -55,7 +55,7 @@ function PatientVisitCard({ appointment, onEdit }: PatientVisitCardProps) {
             <span className="font-semibold">Notes:</span> {notes}
           </p>
         )}
-        {status === AppointmentStatus.COMPLETED && !diagnosis && !notes && (
+        {isCompleted && !diagnosis && !notes && (
           <p className="text-body-sm text-on-surface-variant">
             No diagnosis or notes recorded.
           </p>
