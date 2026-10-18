@@ -276,6 +276,8 @@ const options: swaggerJsdoc.Options = {
       "/api/doctors/{id}/slots": {
         get: {
           summary: "ექიმის თავისუფალი დროის სლოტების წამოღება",
+          description:
+            "თავისუფალი დროის სლოტების ნახვა ხელმისაწვდომია პაციენტებისა და ავტორიზებული კლინიკის ადმინისტრატორებისთვის (CLINIC_ADMIN).",
           tags: ["Doctors"],
           parameters: [
             {
@@ -461,6 +463,215 @@ const options: swaggerJsdoc.Options = {
         },
       },
 
+      "/api/clinic/doctors": {
+        get: {
+          summary: "კლინიკის ექიმების სია",
+          tags: ["Clinic Dashboard"],
+          security: [{ BearerAuth: [] }],
+          responses: {
+            200: {
+              description: "ექიმების სია წარმატებით დაბრუნდა",
+            },
+            401: { description: "არაავტორიზებული" },
+            403: { description: "წვდომა აკრძალულია" },
+            404: { description: "კლინიკა ვერ მოიძებნა" },
+            500: { description: "სერვერის შიდა შეცდომა" },
+          },
+        },
+      },
+
+      "/api/clinic/doctors/{id}/schedule": {
+        put: {
+          summary: "კლინიკის ექიმის სამუშაო გრაფიკის განახლება",
+          tags: ["Clinic Dashboard"],
+          security: [{ BearerAuth: [] }],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              description: "ექიმის უნიკალური ID",
+              schema: { type: "string", format: "uuid" },
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: [
+                    "workingDays",
+                    "startTime",
+                    "endTime",
+                    "slotMinutes",
+                  ],
+                  properties: {
+                    workingDays: {
+                      type: "array",
+                      items: {
+                        type: "integer",
+                        minimum: 1,
+                        maximum: 7,
+                      },
+                      example: [1, 2, 3, 4, 5],
+                      description: "სამუშაო დღეები, 1-დან 7-მდე",
+                    },
+                    startTime: {
+                      type: "string",
+                      example: "09:00",
+                    },
+                    endTime: {
+                      type: "string",
+                      example: "17:00",
+                    },
+                    slotMinutes: {
+                      type: "integer",
+                      example: 30,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: "სამუშაო გრაფიკი განახლდა" },
+            400: { description: "გრაფიკის ვალიდაციის შეცდომა" },
+            401: { description: "არაავტორიზებული" },
+            403: { description: "წვდომა აკრძალულია" },
+            404: { description: "კლინიკა ან ექიმი ვერ მოიძებნა" },
+            500: { description: "სერვერის შიდა შეცდომა" },
+          },
+        },
+      },
+
+      "/api/clinic/appointments": {
+        get: {
+          summary: "კლინიკის ვიზიტების სია ფილტრებით",
+          tags: ["Clinic Dashboard"],
+          security: [{ BearerAuth: [] }],
+          parameters: [
+            {
+              name: "from",
+              in: "query",
+              required: false,
+              description: "პერიოდის დასაწყისი",
+              schema: { type: "string", format: "date-time" },
+            },
+            {
+              name: "to",
+              in: "query",
+              required: false,
+              description: "პერიოდის დასასრული",
+              schema: { type: "string", format: "date-time" },
+            },
+            {
+              name: "doctorId",
+              in: "query",
+              required: false,
+              description: "ექიმის ID-ით ფილტრაცია",
+              schema: { type: "string", format: "uuid" },
+            },
+          ],
+          responses: {
+            200: { description: "ვიზიტების სია წარმატებით დაბრუნდა" },
+            400: { description: "ფილტრის მონაცემები არასწორია" },
+            401: { description: "არაავტორიზებული" },
+            403: { description: "წვდომა აკრძალულია" },
+            404: { description: "კლინიკა ან ექიმი ვერ მოიძებნა" },
+            500: { description: "სერვერის შიდა შეცდომა" },
+          },
+        },
+      },
+
+      "/api/clinic/appointments/{id}/reschedule": {
+        patch: {
+          summary: "კლინიკის ვიზიტის სხვა დროზე გადატანა",
+          tags: ["Clinic Dashboard"],
+          security: [{ BearerAuth: [] }],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              description: "ვიზიტის უნიკალური ID",
+              schema: { type: "string", format: "uuid" },
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["startAt"],
+                  properties: {
+                    startAt: {
+                      type: "string",
+                      format: "date-time",
+                      example: "2026-10-26T10:00:00+04:00",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: "ვიზიტის დრო წარმატებით შეიცვალა" },
+            400: { description: "თარიღი ან დრო არასწორია" },
+            401: { description: "არაავტორიზებული" },
+            403: { description: "წვდომა აკრძალულია" },
+            404: { description: "ვიზიტი ვერ მოიძებნა" },
+            409: { description: "არჩეული დრო დაკავებულია" },
+            500: { description: "სერვერის შიდა შეცდომა" },
+          },
+        },
+      },
+
+      "/api/clinic/appointments/{id}/cancel": {
+        patch: {
+          summary: "კლინიკის ვიზიტის გაუქმება",
+          tags: ["Clinic Dashboard"],
+          security: [{ BearerAuth: [] }],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              description: "ვიზიტის უნიკალური ID",
+              schema: { type: "string", format: "uuid" },
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["reason"],
+                  properties: {
+                    reason: {
+                      type: "string",
+                      maxLength: 200,
+                      example: "ექიმი მიუწვდომელია",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: "ვიზიტი წარმატებით გაუქმდა" },
+            400: { description: "გაუქმების მიზეზი არასწორია" },
+            401: { description: "არაავტორიზებული" },
+            403: { description: "წვდომა აკრძალულია" },
+            404: { description: "ვიზიტი ვერ მოიძებნა" },
+            409: { description: "ვიზიტის გაუქმება შეუძლებელია" },
+            500: { description: "სერვერის შიდა შეცდომა" },
+          },
+        },
+      },
+
       "/api/clinic/stats": {
         get: {
           summary: "კლინიკის სტატისტიკა არჩეული პერიოდის მიხედვით",
@@ -545,8 +756,8 @@ const options: swaggerJsdoc.Options = {
                             type: "object",
                             properties: {
                               pending: { type: "integer", example: 36 },
-                              scheduled: { type: "integer", example: 298 },
-                              completed: { type: "integer", example: 41 },
+                              scheduled: { type: "integer", example: 41 },
+                              completed: { type: "integer", example: 298 },
                               cancelled: { type: "integer", example: 37 },
                             },
                           },

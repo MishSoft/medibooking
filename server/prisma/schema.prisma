@@ -118,9 +118,9 @@ model Appointment {
   cancelledAt        DateTime?
   cancellationReason String?           @db.VarChar(200)
 
-  // Double-booking is prevented by the partial unique index
-  // "Appointment_doctor_active_slot_key" (SCHEDULED only) — see migration
-  // 20261015000000_appointment_active_slot_index. Prisma can't express it here.
+// Double-booking is prevented by partial unique indexes covering
+// SCHEDULED and PENDING appointments. See the SQL migrations.
+// Prisma can't express these partial unique indexes in the schema.
   @@index([doctorId, startAt])
   @@index([patientId])
 }

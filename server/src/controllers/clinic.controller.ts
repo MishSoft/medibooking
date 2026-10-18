@@ -20,13 +20,9 @@ export const getClinics = async (_req: Request, res: Response) => {
       },
     });
 
-    return res.status(200).json({
-      success: true,
-      data: clinics,
-    });
+    return res.status(200).json({ success: true, data: clinics });
   } catch (error) {
     console.error("Error fetching clinics:", error);
-
     return res.status(500).json({
       success: false,
       message: "Internal server error.",
@@ -34,18 +30,27 @@ export const getClinics = async (_req: Request, res: Response) => {
   }
 };
 
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
 const scheduleSchema = z
   .object({
-    workingDays: z.array(z.number().int().min(1).max(7)).min(1),
-    startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
-    endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
-    slotMinutes: z.union([
-      z.literal(15),
-      z.literal(20),
-      z.literal(30),
-      z.literal(45),
-      z.literal(60),
-    ]),
+    workingDays: z
+      .array(z.number().int().min(1).max(7), {
+        message: "Working days must be numbers from 1 (Monday) to 7 (Sunday).",
+      })
+      .min(1, "Select at least one working day."),
+    startTime: z.string().regex(TIME_RE, "Start time must use HH:mm."),
+    endTime: z.string().regex(TIME_RE, "End time must use HH:mm."),
+    slotMinutes: z.union(
+      [
+        z.literal(15),
+        z.literal(20),
+        z.literal(30),
+        z.literal(45),
+        z.literal(60),
+      ],
+      { message: "Slot length must be 15, 20, 30, 45 or 60 minutes." },
+    ),
   })
   .superRefine((schedule, ctx) => {
     if (new Set(schedule.workingDays).size !== schedule.workingDays.length) {
@@ -54,6 +59,11 @@ const scheduleSchema = z
         path: ["workingDays"],
         message: "Working days must not contain duplicates.",
       });
+    }
+
+    // Avoid secondary time comparisons when either time has an invalid format.
+    if (!TIME_RE.test(schedule.startTime) || !TIME_RE.test(schedule.endTime)) {
+      return;
     }
 
     const toMinutes = (time: string) => {
@@ -108,6 +118,45 @@ const clinicDoctorSelect = {
   },
 } as const;
 
+const clinicAppointmentSelect = {
+  id: true,
+  startAt: true,
+  status: true,
+  notes: true,
+  rescheduledFrom: true,
+  cancelledAt: true,
+  cancellationReason: true,
+  doctor: {
+    select: {
+      id: true,
+      primarySpecialty: true,
+      yearsOfPractice: true,
+      bio: true,
+      user: {
+        select: {
+          firstName: true,
+          lastName: true,
+        },
+      },
+      clinic: {
+        select: {
+          id: true,
+          name: true,
+          address: true,
+        },
+      },
+    },
+  },
+  patient: {
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
+    },
+  },
+} as const;
+
 export const getClinicDoctors = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
@@ -134,18 +183,12 @@ export const getClinicDoctors = async (req: Request, res: Response) => {
     const doctors = await prisma.doctorProfile.findMany({
       where: { clinicId: clinic.id },
       select: clinicDoctorSelect,
-      orderBy: {
-        user: { lastName: "asc" },
-      },
+      orderBy: { user: { lastName: "asc" } },
     });
 
-    return res.status(200).json({
-      success: true,
-      data: doctors,
-    });
+    return res.status(200).json({ success: true, data: doctors });
   } catch (error) {
     console.error("Error fetching clinic doctors:", error);
-
     return res.status(500).json({
       success: false,
       message: "Internal server error.",
@@ -181,7 +224,7 @@ export const updateClinicDoctorSchedule = async (
     if (!validation.success) {
       return res.status(400).json({
         success: false,
-        message: "Invalid schedule.",
+        message: validation.error.issues[0]?.message ?? "Invalid schedule.",
         errors: validation.error.issues.map((issue) => ({
           field: issue.path.join("."),
           message: issue.message,
@@ -204,10 +247,7 @@ export const updateClinicDoctorSchedule = async (
     const { id: doctorId } = params.data;
 
     const doctor = await prisma.doctorProfile.findFirst({
-      where: {
-        id: doctorId,
-        clinicId: clinic.id,
-      },
+      where: { id: doctorId, clinicId: clinic.id },
       select: { id: true },
     });
 
@@ -218,12 +258,9 @@ export const updateClinicDoctorSchedule = async (
       });
     }
 
-    const schedule = await prisma.doctorSchedule.upsert({
+    await prisma.doctorSchedule.upsert({
       where: { doctorId },
-      create: {
-        doctorId,
-        ...validation.data,
-      },
+      create: { doctorId, ...validation.data },
       update: validation.data,
     });
 
@@ -239,7 +276,6 @@ export const updateClinicDoctorSchedule = async (
     });
   } catch (error) {
     console.error("Error updating clinic doctor schedule:", error);
-
     return res.status(500).json({
       success: false,
       message: "Internal server error.",
@@ -258,7 +294,6 @@ export const getClinicAppointments = async (req: Request, res: Response) => {
       });
     }
 
-    // Validate query parameters.
     const querySchema = z.object({
       from: z.string().optional(),
       to: z.string().optional(),
@@ -276,9 +311,7 @@ export const getClinicAppointments = async (req: Request, res: Response) => {
     }
 
     const { from, to, doctorId } = parsedQuery.data;
-
     const fromDate = from ? DateTime.fromISO(from, { setZone: true }) : null;
-
     const toDate = to ? DateTime.fromISO(to, { setZone: true }) : null;
 
     if ((fromDate && !fromDate.isValid) || (toDate && !toDate.isValid)) {
@@ -295,7 +328,6 @@ export const getClinicAppointments = async (req: Request, res: Response) => {
       });
     }
 
-    // Resolve the clinic from the authenticated admin.
     const clinic = await prisma.clinic.findUnique({
       where: { adminId: userId },
       select: { id: true },
@@ -308,14 +340,9 @@ export const getClinicAppointments = async (req: Request, res: Response) => {
       });
     }
 
-    // If a doctor filter is supplied, ensure the doctor belongs
-    // to this admin's clinic.
     if (doctorId) {
       const doctor = await prisma.doctorProfile.findFirst({
-        where: {
-          id: doctorId,
-          clinicId: clinic.id,
-        },
+        where: { id: doctorId, clinicId: clinic.id },
         select: { id: true },
       });
 
@@ -329,9 +356,7 @@ export const getClinicAppointments = async (req: Request, res: Response) => {
 
     const appointments = await prisma.appointment.findMany({
       where: {
-        doctor: {
-          clinicId: clinic.id,
-        },
+        doctor: { clinicId: clinic.id },
         ...(doctorId ? { doctorId } : {}),
         ...(fromDate || toDate
           ? {
@@ -342,56 +367,13 @@ export const getClinicAppointments = async (req: Request, res: Response) => {
             }
           : {}),
       },
-      select: {
-        id: true,
-        startAt: true,
-        status: true,
-        notes: true,
-        rescheduledFrom: true,
-        cancelledAt: true,
-        cancellationReason: true,
-        doctor: {
-          select: {
-            id: true,
-            primarySpecialty: true,
-            yearsOfPractice: true,
-            bio: true,
-            user: {
-              select: {
-                firstName: true,
-                lastName: true,
-              },
-            },
-            clinic: {
-              select: {
-                id: true,
-                name: true,
-                address: true,
-              },
-            },
-          },
-        },
-        patient: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-          },
-        },
-      },
-      orderBy: {
-        startAt: "asc",
-      },
+      select: clinicAppointmentSelect,
+      orderBy: { startAt: "asc" },
     });
 
-    return res.status(200).json({
-      success: true,
-      data: appointments,
-    });
+    return res.status(200).json({ success: true, data: appointments });
   } catch (error) {
     console.error("Error fetching clinic appointments:", error);
-
     return res.status(500).json({
       success: false,
       message: "Internal server error.",
@@ -413,7 +395,6 @@ export const rescheduleClinicAppointment = async (
       });
     }
 
-    // Validate appointment ID.
     const params = paramsSchema.safeParse(req.params);
 
     if (!params.success) {
@@ -424,7 +405,6 @@ export const rescheduleClinicAppointment = async (
       });
     }
 
-    // Validate request body.
     const bodySchema = z.object({
       startAt: z.string().datetime({ offset: true }),
     });
@@ -455,7 +435,6 @@ export const rescheduleClinicAppointment = async (
 
     const newStartDate = newStartLocal.toUTC().toJSDate();
 
-    // Resolve the admin's clinic.
     const clinic = await prisma.clinic.findUnique({
       where: { adminId: userId },
       select: { id: true },
@@ -468,14 +447,8 @@ export const rescheduleClinicAppointment = async (
       });
     }
 
-    // Only retrieve appointments belonging to this clinic.
     const appointment = await prisma.appointment.findFirst({
-      where: {
-        id,
-        doctor: {
-          clinicId: clinic.id,
-        },
-      },
+      where: { id, doctor: { clinicId: clinic.id } },
       select: {
         id: true,
         patientId: true,
@@ -520,7 +493,6 @@ export const rescheduleClinicAppointment = async (
       });
     }
 
-    // Validate the new time against the doctor's schedule.
     const validationError = validateScheduledSlot(
       newStartLocal,
       appointment.doctor.schedule,
@@ -534,7 +506,6 @@ export const rescheduleClinicAppointment = async (
       });
     }
 
-    // Check whether another active appointment occupies this time.
     const doctorConflict = await prisma.appointment.findFirst({
       where: {
         doctorId: appointment.doctorId,
@@ -552,8 +523,6 @@ export const rescheduleClinicAppointment = async (
       });
     }
 
-    // Prevent the patient from having another active appointment
-    // at the same exact time.
     const patientConflict = await prisma.appointment.findFirst({
       where: {
         patientId: appointment.patientId,
@@ -572,58 +541,15 @@ export const rescheduleClinicAppointment = async (
     }
 
     const updatedAppointment = await prisma.appointment.update({
-      where: {
-        id: appointment.id,
-      },
+      where: { id: appointment.id },
       data: {
         startAt: newStartDate,
         status: "SCHEDULED",
-
-        // Preserve the original time on subsequent reschedules.
         rescheduledFrom: appointment.rescheduledFrom ?? appointment.startAt,
-
-        // Clear cancellation details when rebooking.
         cancelledAt: null,
         cancellationReason: null,
       },
-      select: {
-        id: true,
-        startAt: true,
-        status: true,
-        notes: true,
-        rescheduledFrom: true,
-        cancelledAt: true,
-        cancellationReason: true,
-        doctor: {
-          select: {
-            id: true,
-            primarySpecialty: true,
-            yearsOfPractice: true,
-            bio: true,
-            user: {
-              select: {
-                firstName: true,
-                lastName: true,
-              },
-            },
-            clinic: {
-              select: {
-                id: true,
-                name: true,
-                address: true,
-              },
-            },
-          },
-        },
-        patient: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-          },
-        },
-      },
+      select: clinicAppointmentSelect,
     });
 
     return res.status(200).json({
@@ -632,7 +558,6 @@ export const rescheduleClinicAppointment = async (
       data: updatedAppointment,
     });
   } catch (error: unknown) {
-    // Handle unique constraint conflicts.
     if (
       typeof error === "object" &&
       error !== null &&
@@ -646,7 +571,6 @@ export const rescheduleClinicAppointment = async (
     }
 
     console.error("Error rescheduling clinic appointment:", error);
-
     return res.status(500).json({
       success: false,
       message: "Internal server error.",
@@ -693,7 +617,6 @@ export const cancelClinicAppointment = async (req: Request, res: Response) => {
     const { id } = params.data;
     const reason = body.data.reason || null;
 
-    // Find the clinic belonging to the authenticated admin.
     const clinic = await prisma.clinic.findUnique({
       where: { adminId: userId },
       select: { id: true },
@@ -706,14 +629,8 @@ export const cancelClinicAppointment = async (req: Request, res: Response) => {
       });
     }
 
-    // Only allow cancellation of appointments in this clinic.
     const appointment = await prisma.appointment.findFirst({
-      where: {
-        id,
-        doctor: {
-          clinicId: clinic.id,
-        },
-      },
+      where: { id, doctor: { clinicId: clinic.id } },
       select: {
         id: true,
         status: true,
@@ -749,17 +666,11 @@ export const cancelClinicAppointment = async (req: Request, res: Response) => {
       });
     }
 
-    // Conditional update avoids overwriting a status that changed
-    // after the appointment was read.
     const result = await prisma.appointment.updateMany({
       where: {
         id: appointment.id,
-        doctor: {
-          clinicId: clinic.id,
-        },
-        status: {
-          in: ["SCHEDULED", "PENDING"],
-        },
+        doctor: { clinicId: clinic.id },
+        status: { in: ["SCHEDULED", "PENDING"] },
       },
       data: {
         status: "CANCELLED",
@@ -777,14 +688,15 @@ export const cancelClinicAppointment = async (req: Request, res: Response) => {
 
     const updatedAppointment = await prisma.appointment.findUnique({
       where: { id: appointment.id },
-      select: {
-        id: true,
-        startAt: true,
-        status: true,
-        cancelledAt: true,
-        cancellationReason: true,
-      },
+      select: clinicAppointmentSelect,
     });
+
+    if (!updatedAppointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Appointment not found after cancellation.",
+      });
+    }
 
     return res.status(200).json({
       success: true,
@@ -793,16 +705,12 @@ export const cancelClinicAppointment = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error cancelling clinic appointment:", error);
-
     return res.status(500).json({
       success: false,
       message: "Internal server error.",
     });
   }
 };
-
-
-
 
 export const getClinicStats = async (req: Request, res: Response) => {
   try {
@@ -815,7 +723,6 @@ export const getClinicStats = async (req: Request, res: Response) => {
       });
     }
 
-    // Validate the required ISO 8601 date-time query parameters.
     const querySchema = z.object({
       from: z.string().datetime({ offset: true }),
       to: z.string().datetime({ offset: true }),
@@ -834,7 +741,6 @@ export const getClinicStats = async (req: Request, res: Response) => {
     const fromDate = DateTime.fromISO(parsedQuery.data.from, {
       setZone: true,
     });
-
     const toDate = DateTime.fromISO(parsedQuery.data.to, {
       setZone: true,
     });
@@ -862,7 +768,6 @@ export const getClinicStats = async (req: Request, res: Response) => {
       });
     }
 
-    // Resolve the authenticated administrator's clinic.
     const clinic = await prisma.clinic.findUnique({
       where: { adminId: userId },
       select: { id: true },
@@ -878,61 +783,40 @@ export const getClinicStats = async (req: Request, res: Response) => {
     const from = fromDate.toUTC().toJSDate();
     const to = toDate.toUTC().toJSDate();
 
-    // One shared date filter: inclusive from, exclusive to.
     const appointmentWhere = {
-      doctor: {
-        clinicId: clinic.id,
-      },
-      startAt: {
-        gte: from,
-        lt: to,
-      },
+      doctor: { clinicId: clinic.id },
+      startAt: { gte: from, lt: to },
     };
 
-    const now = getClinicNow();
+    const now = getClinicNow().toUTC().toJSDate();
 
-    // Load doctors and their current schedules once.
-    const doctors = await prisma.doctorProfile.findMany({
-      where: { clinicId: clinic.id },
-      select: clinicDoctorSelect,
-      orderBy: {
-        user: { lastName: "asc" },
-      },
-    });
-
-    // Aggregate appointments by doctor and status.
-    const groupedAppointments = await prisma.appointment.groupBy({
-      by: ["doctorId", "status"],
-      where: appointmentWhere,
-      _count: {
-        _all: true,
-      },
-    });
-
-    // Count rescheduled appointments independently of status.
-    const rescheduled = await prisma.appointment.count({
-      where: {
-        ...appointmentWhere,
-        rescheduledFrom: {
-          not: null,
-        },
-      },
-    });
-
-    // Only genuinely future appointments count as upcoming.
-    const upcoming = await prisma.appointment.count({
-      where: {
-        ...appointmentWhere,
-        status: {
-          in: ["SCHEDULED", "PENDING"],
-        },
-        startAt: {
-          gt: now.toUTC().toJSDate(),
-          gte: from,
-          lt: to,
-        },
-      },
-    });
+    // All four independent queries run concurrently.
+    const [doctors, groupedAppointments, rescheduled, upcoming] =
+      await Promise.all([
+        prisma.doctorProfile.findMany({
+          where: { clinicId: clinic.id },
+          select: clinicDoctorSelect,
+          orderBy: { user: { lastName: "asc" } },
+        }),
+        prisma.appointment.groupBy({
+          by: ["doctorId", "status"],
+          where: appointmentWhere,
+          _count: { _all: true },
+        }),
+        prisma.appointment.count({
+          where: {
+            ...appointmentWhere,
+            rescheduledFrom: { not: null },
+          },
+        }),
+        prisma.appointment.count({
+          where: {
+            ...appointmentWhere,
+            status: { in: ["SCHEDULED", "PENDING"] },
+            startAt: { ...appointmentWhere.startAt, gt: now },
+          },
+        }),
+      ]);
 
     type DoctorCounts = {
       booked: number;
@@ -942,7 +826,6 @@ export const getClinicStats = async (req: Request, res: Response) => {
 
     const countsByDoctor = new Map<string, DoctorCounts>();
 
-    // Initialize every doctor, including doctors with no appointments.
     for (const doctor of doctors) {
       countsByDoctor.set(doctor.id, {
         booked: 0,
@@ -959,30 +842,19 @@ export const getClinicStats = async (req: Request, res: Response) => {
 
     for (const row of groupedAppointments) {
       const count = row._count._all;
-
       total += count;
 
-      if (row.status === "COMPLETED") {
-        completed += count;
-      } else if (row.status === "CANCELLED") {
-        cancelled += count;
-      } else if (row.status === "PENDING") {
-        pending += count;
-      } else if (row.status === "SCHEDULED") {
-        scheduled += count;
-      }
+      if (row.status === "COMPLETED") completed += count;
+      else if (row.status === "CANCELLED") cancelled += count;
+      else if (row.status === "PENDING") pending += count;
+      else if (row.status === "SCHEDULED") scheduled += count;
 
       const doctorCounts = countsByDoctor.get(row.doctorId);
-
-      if (!doctorCounts) {
-        continue;
-      }
+      if (!doctorCounts) continue;
 
       if (row.status === "CANCELLED") {
         doctorCounts.cancelled += count;
       } else {
-        // Booked includes every non-cancelled appointment,
-        // including completed appointments.
         doctorCounts.booked += count;
       }
 
@@ -991,16 +863,12 @@ export const getClinicStats = async (req: Request, res: Response) => {
       }
     }
 
-    // Calculate schedule capacity across the calendar days touched
-    // by the requested range, using the clinic's timezone.
     const fromLocal = fromDate.setZone(CLINIC_TZ);
     const toLocal = toDate.setZone(CLINIC_TZ);
-
     const firstDay = fromLocal.startOf("day");
 
     const workload = doctors.map((doctor) => {
       const counts = countsByDoctor.get(doctor.id)!;
-
       let capacity = 0;
 
       if (doctor.schedule) {
@@ -1008,7 +876,6 @@ export const getClinicStats = async (req: Request, res: Response) => {
 
         while (day.toMillis() < toLocal.toMillis()) {
           capacity += generateScheduleSlots(day, doctor.schedule).length;
-
           day = day.plus({ days: 1 });
         }
       }
@@ -1024,7 +891,6 @@ export const getClinicStats = async (req: Request, res: Response) => {
     });
 
     const totalBooked = workload.reduce((sum, item) => sum + item.booked, 0);
-
     const totalCapacity = workload.reduce(
       (sum, item) => sum + item.capacity,
       0,
@@ -1041,8 +907,6 @@ export const getClinicStats = async (req: Request, res: Response) => {
         cancellationRate: total > 0 ? cancelled / total : 0,
         utilisation: totalCapacity > 0 ? totalBooked / totalCapacity : 0,
         workload,
-
-        // Keep the existing fields for backward compatibility.
         doctorsCount: doctors.length,
         appointmentsCount: total,
         appointmentsByStatus: {
@@ -1055,11 +919,9 @@ export const getClinicStats = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error fetching clinic stats:", error);
-
     return res.status(500).json({
       success: false,
       message: "Internal server error.",
     });
   }
 };
-
