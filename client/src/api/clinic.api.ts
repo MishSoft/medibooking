@@ -2,11 +2,12 @@ import { parse } from "date-fns";
 import { mockDelay } from "../mocks/delay";
 import type { TimeSlot } from "../types/booking";
 import {
-  computeClinicStats,
   computeDoctorSlots,
   mockClinicAppointments,
   mockClinicDoctors,
 } from "../mocks/clinic";
+import type { ApiResponse } from "./auth.api";
+import { apiRequest } from "./client";
 import { AppointmentStatus } from "../types/appointment";
 import type {
   ClinicAppointment,
@@ -116,35 +117,41 @@ export type UpdateDoctorSchedulePayload = {
   schedule: DoctorSchedule;
 };
 
+// Skips empty values; from/to are ISO date-times, so they need encoding
+const toQueryString = (params: Record<string, string | undefined>) => {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) search.set(key, value);
+  });
+  const query = search.toString();
+  return query ? `?${query}` : "";
+};
+
 const findAppointment = (id: string) => {
   const appointment = mockClinicAppointments.find((apt) => apt.id === id);
   if (!appointment) throw new Error("Appointment not found.");
   return appointment;
 };
 
-// Mock-backed (clinic dashboard) — no server endpoints yet.
-// Expected endpoints: GET api/clinic/doctors, GET api/clinic/appointments,
+// Clinic admin endpoints (CLINIC_ADMIN only, scoped to the admin's clinic).
+// Reads use the server; writes and slots are still mock-backed until wired to
 // PATCH api/clinic/appointments/:id/{reschedule,cancel},
-// PUT api/clinic/doctors/:id/schedule, GET api/clinic/stats
+// PUT api/clinic/doctors/:id/schedule and GET api/doctors/:id/slots
 export const clinicApi = {
   doctors: async (): Promise<ClinicDoctor[]> => {
-    await mockDelay();
-    return [...mockClinicDoctors];
+    const response = await apiRequest<ApiResponse<ClinicDoctorDto[]>>(
+      "api/clinic/doctors",
+    );
+    return (response.data ?? []).map(toClinicDoctor);
   },
-  appointments: async ({
-    from,
-    to,
-    doctorId,
-  }: ClinicAppointmentsFilters = {}): Promise<ClinicAppointment[]> => {
-    await mockDelay();
-    return mockClinicAppointments
-      .filter(
-        (apt) =>
-          (!from || new Date(apt.startsAt) >= new Date(from)) &&
-          (!to || new Date(apt.startsAt) < new Date(to)) &&
-          (!doctorId || apt.doctor.id === doctorId),
-      )
-      .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  // Sorted by start time on the server
+  appointments: async (
+    filters: ClinicAppointmentsFilters = {},
+  ): Promise<ClinicAppointment[]> => {
+    const response = await apiRequest<ApiResponse<ClinicAppointmentDto[]>>(
+      `api/clinic/appointments${toQueryString(filters)}`,
+    );
+    return (response.data ?? []).map(toClinicAppointment);
   },
   reschedule: async ({
     id,
@@ -197,7 +204,10 @@ export const clinicApi = {
     return computeDoctorSlots(doctorId, parse(date, "yyyy-MM-dd", new Date()));
   },
   stats: async (range: DateRange): Promise<ClinicStats> => {
-    await mockDelay();
-    return computeClinicStats(range);
+    const response = await apiRequest<ApiResponse<ClinicStatsDto>>(
+      `api/clinic/stats${toQueryString(range)}`,
+    );
+    if (!response.data) throw new Error("Could not load clinic stats.");
+    return toClinicStats(response.data);
   },
 };
