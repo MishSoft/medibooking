@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { addMonths, format, startOfToday } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
+import { ApiError } from "../../api/client";
 import {
   clinicQueryKey,
   useClinicDoctors,
@@ -56,12 +57,14 @@ function RescheduleModal({ appointment, onClose }: RescheduleModalProps) {
       { id: appointment.id, startsAt: slot.toISOString() },
       {
         onSuccess: onClose,
-        // The slot may have been taken meanwhile — show fresh availability
-        onError: () => {
-          setSlot(undefined);
-          void queryClient.invalidateQueries({
-            queryKey: [...clinicQueryKey, "slots"],
-          });
+        onError: (error) => {
+          // Someone else took the slot meanwhile — show fresh availability
+          if (error instanceof ApiError && error.status === 409) {
+            setSlot(undefined);
+            void queryClient.invalidateQueries({
+              queryKey: [...clinicQueryKey, "slots"],
+            });
+          }
         },
       },
     );

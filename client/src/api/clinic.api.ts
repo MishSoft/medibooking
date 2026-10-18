@@ -1,14 +1,6 @@
-import { parse } from "date-fns";
-import { mockDelay } from "../mocks/delay";
 import type { TimeSlot } from "../types/booking";
-import {
-  computeDoctorSlots,
-  mockClinicAppointments,
-  mockClinicDoctors,
-} from "../mocks/clinic";
 import type { ApiResponse } from "./auth.api";
 import { apiRequest } from "./client";
-import { AppointmentStatus } from "../types/appointment";
 import type {
   ClinicAppointment,
   ClinicAppointmentsFilters,
@@ -25,6 +17,7 @@ import {
   type PatientDto,
 } from "./appointments.api";
 import {
+  doctorsApi,
   toDoctor,
   toDoctorSchedule,
   toServerWeekdays,
@@ -127,16 +120,7 @@ const toQueryString = (params: Record<string, string | undefined>) => {
   return query ? `?${query}` : "";
 };
 
-const findAppointment = (id: string) => {
-  const appointment = mockClinicAppointments.find((apt) => apt.id === id);
-  if (!appointment) throw new Error("Appointment not found.");
-  return appointment;
-};
-
-// Clinic admin endpoints (CLINIC_ADMIN only, scoped to the admin's clinic).
-// Reads use the server; writes and slots are still mock-backed until wired to
-// PATCH api/clinic/appointments/:id/{reschedule,cancel},
-// PUT api/clinic/doctors/:id/schedule and GET api/doctors/:id/slots
+// Clinic admin endpoints (CLINIC_ADMIN only, scoped to the admin's clinic)
 export const clinicApi = {
   doctors: async (): Promise<ClinicDoctor[]> => {
     const response = await apiRequest<ApiResponse<ClinicDoctorDto[]>>(
@@ -153,56 +137,43 @@ export const clinicApi = {
     );
     return (response.data ?? []).map(toClinicAppointment);
   },
+  // Also rebooks cancelled appointments; 409 when the slot is no longer free
   reschedule: async ({
     id,
     startsAt,
   }: RescheduleAppointmentPayload): Promise<ClinicAppointment> => {
-    await mockDelay();
-    const appointment = findAppointment(id);
-    const isTaken = !computeDoctorSlots(
-      appointment.doctor.id,
-      new Date(startsAt),
-    ).some(
-      (slot) =>
-        slot.available && slot.start.getTime() === new Date(startsAt).getTime(),
+    const response = await apiRequest<ApiResponse<ClinicAppointmentDto>>(
+      `api/clinic/appointments/${id}/reschedule`,
+      { method: "PATCH", body: { startAt: startsAt } },
     );
-    if (isTaken) throw new Error("This slot is no longer available.");
-
-    // Keep the very first slot when an appointment is moved more than once
-    appointment.rescheduledFrom ??= appointment.startsAt;
-    appointment.startsAt = startsAt;
-    // Rebooking a cancelled appointment makes it active again
-    appointment.status = AppointmentStatus.SCHEDULED;
-    appointment.cancelledAt = undefined;
-    appointment.cancellationReason = undefined;
-    return { ...appointment };
+    if (!response.data) throw new Error("Rescheduling failed.");
+    return toClinicAppointment(response.data);
   },
   cancel: async ({
     id,
     reason,
   }: CancelAppointmentPayload): Promise<ClinicAppointment> => {
-    await mockDelay();
-    const appointment = findAppointment(id);
-    appointment.status = AppointmentStatus.CANCELLED;
-    appointment.cancelledAt = new Date().toISOString();
-    appointment.cancellationReason = reason;
-    return { ...appointment };
+    const response = await apiRequest<ApiResponse<ClinicAppointmentDto>>(
+      `api/clinic/appointments/${id}/cancel`,
+      { method: "PATCH", body: { reason } },
+    );
+    if (!response.data) throw new Error("Cancellation failed.");
+    return toClinicAppointment(response.data);
   },
   updateSchedule: async ({
     doctorId,
     schedule,
   }: UpdateDoctorSchedulePayload): Promise<ClinicDoctor> => {
-    await mockDelay();
-    const doctor = mockClinicDoctors.find((item) => item.id === doctorId);
-    if (!doctor) throw new Error("Doctor not found.");
-    doctor.schedule = schedule;
-    return { ...doctor };
+    const response = await apiRequest<ApiResponse<ClinicDoctorDto>>(
+      `api/clinic/doctors/${doctorId}/schedule`,
+      { method: "PUT", body: toDoctorScheduleBody(schedule) },
+    );
+    if (!response.data) throw new Error("Could not update the schedule.");
+    return toClinicDoctor(response.data);
   },
-  // date: "yyyy-MM-dd"; maps to the existing GET api/doctors/:id/slots
-  slots: async (doctorId: string, date: string): Promise<TimeSlot[]> => {
-    await mockDelay();
-    return computeDoctorSlots(doctorId, parse(date, "yyyy-MM-dd", new Date()));
-  },
+  // date: "yyyy-MM-dd"; same endpoint as patient booking, open to clinic admins
+  slots: (doctorId: string, date: string): Promise<TimeSlot[]> =>
+    doctorsApi.slots(doctorId, date),
   stats: async (range: DateRange): Promise<ClinicStats> => {
     const response = await apiRequest<ApiResponse<ClinicStatsDto>>(
       `api/clinic/stats${toQueryString(range)}`,
