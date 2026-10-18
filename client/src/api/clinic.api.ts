@@ -15,7 +15,91 @@ import type {
   ClinicStats,
   DateRange,
   DoctorSchedule,
+  DoctorWorkload,
 } from "../types/clinic";
+import {
+  toAppointment,
+  toPatient,
+  type AppointmentDto,
+  type PatientDto,
+} from "./appointments.api";
+import {
+  toDoctor,
+  toDoctorSchedule,
+  toServerWeekdays,
+  type DoctorDto,
+  type DoctorScheduleDto,
+} from "./doctors.api";
+
+// Shapes returned by the server's /api/clinic endpoints (Prisma select)
+export type ClinicDoctorDto = Omit<DoctorDto, "user" | "schedule"> & {
+  user: DoctorDto["user"] & { email: string };
+  schedule: DoctorScheduleDto | null;
+};
+
+export type ClinicAppointmentDto = AppointmentDto & {
+  patient: PatientDto;
+  rescheduledFrom: string | null;
+  cancelledAt: string | null;
+  cancellationReason: string | null;
+};
+
+export type DoctorWorkloadDto = Omit<DoctorWorkload, "doctor"> & {
+  doctor: ClinicDoctorDto;
+};
+
+export type ClinicStatsDto = Omit<ClinicStats, "workload"> & {
+  workload: DoctorWorkloadDto[];
+};
+
+// A doctor without a schedule shows "No working days" and can be set up from
+// the Schedules tab; registration and the migration normally create one
+const emptySchedule: DoctorSchedule = {
+  workingDays: [],
+  startTime: "09:00",
+  endTime: "17:00",
+  slotMinutes: 30,
+};
+
+export const toClinicDoctor = (dto: ClinicDoctorDto): ClinicDoctor => ({
+  ...toDoctor({ ...dto, schedule: undefined }),
+  email: dto.user.email,
+  schedule: dto.schedule ? toDoctorSchedule(dto.schedule) : emptySchedule,
+});
+
+export const toClinicAppointment = (
+  dto: ClinicAppointmentDto,
+): ClinicAppointment => ({
+  ...toAppointment(dto),
+  patient: toPatient(dto.patient),
+  rescheduledFrom: dto.rescheduledFrom ?? undefined,
+  cancelledAt: dto.cancelledAt ?? undefined,
+  cancellationReason: dto.cancellationReason ?? undefined,
+});
+
+export const toClinicStats = (dto: ClinicStatsDto): ClinicStats => ({
+  total: dto.total,
+  completed: dto.completed,
+  upcoming: dto.upcoming,
+  cancelled: dto.cancelled,
+  rescheduled: dto.rescheduled,
+  cancellationRate: dto.cancellationRate,
+  utilisation: dto.utilisation,
+  workload: dto.workload.map(({ doctor, ...counts }) => ({
+    ...counts,
+    doctor: toClinicDoctor(doctor),
+  })),
+});
+
+// Request body for PUT /api/clinic/doctors/:id/schedule (server weekdays)
+export const toDoctorScheduleBody = (
+  schedule: DoctorSchedule,
+): DoctorScheduleDto => ({
+  workingDays: toServerWeekdays(schedule.workingDays),
+  startTime: schedule.startTime,
+  endTime: schedule.endTime,
+  slotMinutes: schedule.slotMinutes,
+});
 
 export type RescheduleAppointmentPayload = {
   id: string;
