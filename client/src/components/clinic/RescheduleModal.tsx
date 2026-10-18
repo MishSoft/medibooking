@@ -13,7 +13,7 @@ import Button from "../../shared/ui/Button";
 import DatePicker from "../../shared/ui/DatePicker";
 import Modal from "../../shared/ui/Modal";
 import QueryState from "../../shared/ui/QueryState";
-import { isWorkingDay } from "../../utils/clinic";
+import { isWorkingDay } from "../../utils/schedule";
 import TimeSlotPicker from "../booking/TimeSlotPicker";
 import { getDoctorName } from "../doctors/DoctorCard";
 

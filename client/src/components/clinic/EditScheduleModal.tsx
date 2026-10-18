@@ -5,7 +5,7 @@ import Button from "../../shared/ui/Button";
 import Input from "../../shared/ui/Input";
 import Modal from "../../shared/ui/Modal";
 import Select from "../../shared/ui/Select";
-import { toTime, weekdayLabels, weekOrder } from "../../utils/clinic";
+import { dayLabels, toTime, weekOrder } from "../../utils/schedule";
 import { getDoctorName } from "../doctors/DoctorCard";
 
 type EditScheduleModalProps = {
@@ -108,7 +108,7 @@ function EditScheduleModal({ doctor, onClose }: EditScheduleModalProps) {
                   onClick={() => toggleDay(day)}
                   type="button"
                 >
-                  {weekdayLabels[day]}
+                  {dayLabels[day]}
                 </button>
               );
             })}

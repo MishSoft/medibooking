@@ -7,7 +7,7 @@ import {
   formatWorkingHours,
   getSlotsPerDay,
   isWorkingDay,
-} from "../../utils/clinic";
+} from "../../utils/schedule";
 import { getDoctorName } from "../doctors/DoctorCard";
 import ClinicAppointmentCard from "./ClinicAppointmentCard";
 
