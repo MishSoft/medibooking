@@ -7,7 +7,7 @@ import type { ClinicDoctor } from "../../types/clinic";
 import Avatar from "../../shared/ui/Avatar";
 import Button from "../../shared/ui/Button";
 import Tag from "../../shared/ui/Tag";
-import { formatWorkingDays, formatWorkingHours } from "../../utils/clinic";
+import { formatWorkingDays, formatWorkingHours } from "../../utils/schedule";
 import { getDoctorName } from "../doctors/DoctorCard";
 
 type ClinicDoctorCardProps = {

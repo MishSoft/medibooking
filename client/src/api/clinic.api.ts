@@ -1,13 +1,6 @@
-import { parse } from "date-fns";
-import { mockDelay } from "../mocks/delay";
 import type { TimeSlot } from "../types/booking";
-import {
-  computeClinicStats,
-  computeDoctorSlots,
-  mockClinicAppointments,
-  mockClinicDoctors,
-} from "../mocks/clinic";
-import { AppointmentStatus } from "../types/appointment";
+import type { ApiResponse } from "./auth.api";
+import { apiRequest } from "./client";
 import type {
   ClinicAppointment,
   ClinicAppointmentsFilters,
@@ -15,7 +8,92 @@ import type {
   ClinicStats,
   DateRange,
   DoctorSchedule,
+  DoctorWorkload,
 } from "../types/clinic";
+import {
+  toAppointment,
+  toPatient,
+  type AppointmentDto,
+  type PatientDto,
+} from "./appointments.api";
+import {
+  doctorsApi,
+  toDoctor,
+  toDoctorSchedule,
+  toServerWeekdays,
+  type DoctorDto,
+  type DoctorScheduleDto,
+} from "./doctors.api";
+
+// Shapes returned by the server's /api/clinic endpoints (Prisma select)
+export type ClinicDoctorDto = Omit<DoctorDto, "user" | "schedule"> & {
+  user: DoctorDto["user"] & { email: string };
+  schedule: DoctorScheduleDto | null;
+};
+
+export type ClinicAppointmentDto = AppointmentDto & {
+  patient: PatientDto;
+  rescheduledFrom: string | null;
+  cancelledAt: string | null;
+  cancellationReason: string | null;
+};
+
+export type DoctorWorkloadDto = Omit<DoctorWorkload, "doctor"> & {
+  doctor: ClinicDoctorDto;
+};
+
+export type ClinicStatsDto = Omit<ClinicStats, "workload"> & {
+  workload: DoctorWorkloadDto[];
+};
+
+// A doctor without a schedule shows "No working days" and can be set up from
+// the Schedules tab; registration and the migration normally create one
+const emptySchedule: DoctorSchedule = {
+  workingDays: [],
+  startTime: "09:00",
+  endTime: "17:00",
+  slotMinutes: 30,
+};
+
+export const toClinicDoctor = (dto: ClinicDoctorDto): ClinicDoctor => ({
+  ...toDoctor({ ...dto, schedule: undefined }),
+  email: dto.user.email,
+  schedule: dto.schedule ? toDoctorSchedule(dto.schedule) : emptySchedule,
+});
+
+export const toClinicAppointment = (
+  dto: ClinicAppointmentDto,
+): ClinicAppointment => ({
+  ...toAppointment(dto),
+  patient: toPatient(dto.patient),
+  rescheduledFrom: dto.rescheduledFrom ?? undefined,
+  cancelledAt: dto.cancelledAt ?? undefined,
+  cancellationReason: dto.cancellationReason ?? undefined,
+});
+
+export const toClinicStats = (dto: ClinicStatsDto): ClinicStats => ({
+  total: dto.total,
+  completed: dto.completed,
+  upcoming: dto.upcoming,
+  cancelled: dto.cancelled,
+  rescheduled: dto.rescheduled,
+  cancellationRate: dto.cancellationRate,
+  utilisation: dto.utilisation,
+  workload: dto.workload.map(({ doctor, ...counts }) => ({
+    ...counts,
+    doctor: toClinicDoctor(doctor),
+  })),
+});
+
+// Request body for PUT /api/clinic/doctors/:id/schedule (server weekdays)
+export const toDoctorScheduleBody = (
+  schedule: DoctorSchedule,
+): DoctorScheduleDto => ({
+  workingDays: toServerWeekdays(schedule.workingDays),
+  startTime: schedule.startTime,
+  endTime: schedule.endTime,
+  slotMinutes: schedule.slotMinutes,
+});
 
 export type RescheduleAppointmentPayload = {
   id: string;
@@ -32,88 +110,75 @@ export type UpdateDoctorSchedulePayload = {
   schedule: DoctorSchedule;
 };
 
-const findAppointment = (id: string) => {
-  const appointment = mockClinicAppointments.find((apt) => apt.id === id);
-  if (!appointment) throw new Error("Appointment not found.");
-  return appointment;
+// Skips empty values; from/to are ISO date-times, so they need encoding
+const toQueryString = (params: Record<string, string | undefined>) => {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) search.set(key, value);
+  });
+  const query = search.toString();
+  return query ? `?${query}` : "";
 };
 
-// Mock-backed (clinic dashboard) — no server endpoints yet.
-// Expected endpoints: GET api/clinic/doctors, GET api/clinic/appointments,
-// PATCH api/clinic/appointments/:id/{reschedule,cancel},
-// PUT api/clinic/doctors/:id/schedule, GET api/clinic/stats
+// Clinic admin endpoints (CLINIC_ADMIN only, scoped to the admin's clinic)
 export const clinicApi = {
   doctors: async (): Promise<ClinicDoctor[]> => {
-    await mockDelay();
-    return [...mockClinicDoctors];
+    const response = await apiRequest<ApiResponse<ClinicDoctorDto[]>>(
+      "api/clinic/doctors",
+    );
+    return (response.data ?? []).map(toClinicDoctor);
   },
-  appointments: async ({
-    from,
-    to,
-    doctorId,
-  }: ClinicAppointmentsFilters = {}): Promise<ClinicAppointment[]> => {
-    await mockDelay();
-    return mockClinicAppointments
-      .filter(
-        (apt) =>
-          (!from || new Date(apt.startsAt) >= new Date(from)) &&
-          (!to || new Date(apt.startsAt) < new Date(to)) &&
-          (!doctorId || apt.doctor.id === doctorId),
-      )
-      .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  // Sorted by start time on the server
+  appointments: async (
+    filters: ClinicAppointmentsFilters = {},
+  ): Promise<ClinicAppointment[]> => {
+    const response = await apiRequest<ApiResponse<ClinicAppointmentDto[]>>(
+      `api/clinic/appointments${toQueryString(filters)}`,
+    );
+    return (response.data ?? []).map(toClinicAppointment);
   },
+  // Also rebooks cancelled appointments; 409 when the slot is no longer free
   reschedule: async ({
     id,
     startsAt,
   }: RescheduleAppointmentPayload): Promise<ClinicAppointment> => {
-    await mockDelay();
-    const appointment = findAppointment(id);
-    const isTaken = !computeDoctorSlots(
-      appointment.doctor.id,
-      new Date(startsAt),
-    ).some(
-      (slot) =>
-        slot.available && slot.start.getTime() === new Date(startsAt).getTime(),
+    const response = await apiRequest<ApiResponse<ClinicAppointmentDto>>(
+      `api/clinic/appointments/${id}/reschedule`,
+      { method: "PATCH", body: { startAt: startsAt } },
     );
-    if (isTaken) throw new Error("This slot is no longer available.");
-
-    // Keep the very first slot when an appointment is moved more than once
-    appointment.rescheduledFrom ??= appointment.startsAt;
-    appointment.startsAt = startsAt;
-    // Rebooking a cancelled appointment makes it active again
-    appointment.status = AppointmentStatus.SCHEDULED;
-    appointment.cancelledAt = undefined;
-    appointment.cancellationReason = undefined;
-    return { ...appointment };
+    if (!response.data) throw new Error("Rescheduling failed.");
+    return toClinicAppointment(response.data);
   },
   cancel: async ({
     id,
     reason,
   }: CancelAppointmentPayload): Promise<ClinicAppointment> => {
-    await mockDelay();
-    const appointment = findAppointment(id);
-    appointment.status = AppointmentStatus.CANCELLED;
-    appointment.cancelledAt = new Date().toISOString();
-    appointment.cancellationReason = reason;
-    return { ...appointment };
+    const response = await apiRequest<ApiResponse<ClinicAppointmentDto>>(
+      `api/clinic/appointments/${id}/cancel`,
+      { method: "PATCH", body: { reason } },
+    );
+    if (!response.data) throw new Error("Cancellation failed.");
+    return toClinicAppointment(response.data);
   },
   updateSchedule: async ({
     doctorId,
     schedule,
   }: UpdateDoctorSchedulePayload): Promise<ClinicDoctor> => {
-    await mockDelay();
-    const doctor = mockClinicDoctors.find((item) => item.id === doctorId);
-    if (!doctor) throw new Error("Doctor not found.");
-    doctor.schedule = schedule;
-    return { ...doctor };
+    const response = await apiRequest<ApiResponse<ClinicDoctorDto>>(
+      `api/clinic/doctors/${doctorId}/schedule`,
+      { method: "PUT", body: toDoctorScheduleBody(schedule) },
+    );
+    if (!response.data) throw new Error("Could not update the schedule.");
+    return toClinicDoctor(response.data);
   },
-  // date: "yyyy-MM-dd"; maps to the existing GET api/doctors/:id/slots
-  slots: async (doctorId: string, date: string): Promise<TimeSlot[]> => {
-    await mockDelay();
-    return computeDoctorSlots(doctorId, parse(date, "yyyy-MM-dd", new Date()));
-  },
+  // date: "yyyy-MM-dd"; same endpoint as patient booking, open to clinic admins
+  slots: (doctorId: string, date: string): Promise<TimeSlot[]> =>
+    doctorsApi.slots(doctorId, date),
   stats: async (range: DateRange): Promise<ClinicStats> => {
-    await mockDelay();
-    return computeClinicStats(range);
+    const response = await apiRequest<ApiResponse<ClinicStatsDto>>(
+      `api/clinic/stats${toQueryString(range)}`,
+    );
+    if (!response.data) throw new Error("Could not load clinic stats.");
+    return toClinicStats(response.data);
   },
 };
