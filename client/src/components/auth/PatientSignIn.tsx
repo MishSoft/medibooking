@@ -13,6 +13,7 @@ import FieldError from "../../shared/ui/FieldError";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useLogin } from "../../hooks/useLogin";
+import { notify } from "../../utils/notify";
 import { authStorage } from "../../api/auth.storage";
 
 type PatientSignInProps = {
@@ -37,13 +38,13 @@ function PatientSignIn({ onRegisterClick }: PatientSignInProps) {
     setLoginError("");
     try {
       const response = await login.mutateAsync(data);
-      console.log("Patient logged in:", response);
 
       if (!response.data) {
         throw new Error("Login failed.");
       }
 
       authStorage.setSession(response.data.token, response.data.user);
+      notify.success(`Welcome back, ${response.data.user.firstName}!`);
       navigate("/dashboard/patient", { replace: true });
     } catch (error) {
       setLoginError(error instanceof Error ? error.message : "Login failed.");

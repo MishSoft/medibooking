@@ -5,6 +5,7 @@ import { authApi } from "../api/auth.api";
 import { authStorage } from "../api/auth.storage";
 import { CloseIcon, PractitionerSignInIcon } from "../assets/icons/Icons";
 import { Role } from "../types/enums";
+import { notify } from "../utils/notify";
 
 const roleLabels: Record<Role, string> = {
   [Role.PATIENT]: "Patient",
@@ -60,6 +61,7 @@ function Header({ role = "Patient" }: HeaderProps) {
     authStorage.clear();
     // Drop cached data so the next user never sees the previous one's records
     queryClient.clear();
+    notify.info("You have been signed out");
     navigate("/path-selector", { replace: true });
   };
 

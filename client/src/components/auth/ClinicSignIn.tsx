@@ -15,6 +15,7 @@ import FieldError from "../../shared/ui/FieldError";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useLogin } from "../../hooks/useLogin";
+import { notify } from "../../utils/notify";
 import { authStorage } from "../../api/auth.storage";
 
 type ClinicSignInProps = {
@@ -48,6 +49,7 @@ function ClinicSignIn({ onRegisterClick }: ClinicSignInProps) {
       }
 
       authStorage.setSession(response.data.token, response.data.user);
+      notify.success(`Welcome back, ${response.data.user.firstName}!`);
       navigate("/dashboard/clinic", { replace: true });
     } catch (error) {
       setLoginError(error instanceof Error ? error.message : "Login failed.");
