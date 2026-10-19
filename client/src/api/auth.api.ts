@@ -120,7 +120,7 @@ export const authApi = {
       body: payload,
     }),
   registerClinic: (payload: ClinicRegisterPayload) =>
-    apiRequest<ApiResponse>("api/auth/register/clinic", {
+    apiRequest<ApiResponse<LoginResponseData>>("api/auth/register/clinic", {
       method: "POST",
       body: payload,
     }),

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import {
@@ -22,6 +22,7 @@ import {
   type ClinicRegistrationFormOutput,
 } from "../../schemas/clinicRegistration.schema";
 import { toClinicRegisterPayload } from "../../api/auth.api";
+import { authStorage } from "../../api/auth.storage";
 import { useRegisterClinic } from "../../hooks/useRegisterClinic";
 import { notify } from "../../utils/notify";
 
@@ -39,6 +40,7 @@ const departmentOptions = [
 
 function ClinicRegistrationPage() {
   const [submissionMessage, setSubmissionMessage] = useState("");
+  const navigate = useNavigate();
   const registerClinic = useRegisterClinic();
 
   const {
@@ -62,11 +64,20 @@ function ClinicRegistrationPage() {
   const onSubmit = async (data: ClinicRegistrationFormOutput) => {
     setSubmissionMessage("");
     try {
-      await registerClinic.mutateAsync(toClinicRegisterPayload(data));
+      const response = await registerClinic.mutateAsync(
+        toClinicRegisterPayload(data),
+      );
+
+      if (!response.data) {
+        throw new Error("Clinic registration failed.");
+      }
+
+      authStorage.setSession(response.data.token, response.data.user);
       notify.success(
         "Clinic registered",
         "Your clinic admin account has been created successfully.",
       );
+      navigate("/dashboard/clinic", { replace: true });
     } catch (error) {
       setSubmissionMessage(
         error instanceof Error ? error.message : "Clinic registration failed.",
