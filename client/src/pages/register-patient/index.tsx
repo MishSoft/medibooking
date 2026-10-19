@@ -24,6 +24,7 @@ import {
 import { toPatientRegisterPayload } from "../../api/auth.api";
 import { authStorage } from "../../api/auth.storage";
 import { useRegisterPatient } from "../../hooks/useRegisterPatient";
+import { notify } from "../../utils/notify";
 
 const genderOptions = [
   { label: "Female", value: Gender.FEMALE },
@@ -67,6 +68,10 @@ function PatientRegistrationPage() {
       }
 
       authStorage.setSession(response.data.token, response.data.user);
+      notify.success(
+        "Registration successful",
+        "Welcome to MediBooking! Your patient profile is ready.",
+      );
       navigate("/dashboard/patient", { replace: true });
     } catch (error) {
       setSubmissionMessage(

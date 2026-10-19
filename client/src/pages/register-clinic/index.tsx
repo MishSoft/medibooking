@@ -23,6 +23,7 @@ import {
 } from "../../schemas/clinicRegistration.schema";
 import { toClinicRegisterPayload } from "../../api/auth.api";
 import { useRegisterClinic } from "../../hooks/useRegisterClinic";
+import { notify } from "../../utils/notify";
 
 // TODO: replace with departments from the API once an endpoint exists
 const departmentOptions = [
@@ -61,10 +62,11 @@ function ClinicRegistrationPage() {
   const onSubmit = async (data: ClinicRegistrationFormOutput) => {
     setSubmissionMessage("");
     try {
-      const response = await registerClinic.mutateAsync(
-        toClinicRegisterPayload(data),
+      await registerClinic.mutateAsync(toClinicRegisterPayload(data));
+      notify.success(
+        "Clinic registered",
+        "Your clinic admin account has been created successfully.",
       );
-      console.log("Clinic registered:", response);
     } catch (error) {
       setSubmissionMessage(
         error instanceof Error ? error.message : "Clinic registration failed.",

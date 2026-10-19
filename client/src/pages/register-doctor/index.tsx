@@ -27,6 +27,7 @@ import {
 import { toDoctorRegisterPayload } from "../../api/auth.api";
 import { useMe } from "../../hooks/useMe";
 import { useRegisterDoctor } from "../../hooks/useRegisterDoctor";
+import { notify } from "../../utils/notify";
 import YearsOfPracticeField from "./components/YearsOfPracticeField";
 
 const genderOptions = [
@@ -92,6 +93,10 @@ function DoctorRegistrationPage() {
     setSubmissionMessage("");
     try {
       await registerDoctor.mutateAsync(toDoctorRegisterPayload(data));
+      notify.success(
+        "Doctor registered",
+        `Dr. ${data.firstName} ${data.lastName} has been added to your clinic.`,
+      );
       navigate("/dashboard/clinic", { replace: true });
     } catch (error) {
       setSubmissionMessage(
