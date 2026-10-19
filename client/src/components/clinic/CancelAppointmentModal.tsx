@@ -6,6 +6,7 @@ import Button from "../../shared/ui/Button";
 import Input from "../../shared/ui/Input";
 import Modal from "../../shared/ui/Modal";
 import Select from "../../shared/ui/Select";
+import { notify } from "../../utils/notify";
 import { getDoctorName } from "../doctors/DoctorCard";
 
 type CancelAppointmentModalProps = {
@@ -38,7 +39,15 @@ function CancelAppointmentModal({
   const handleConfirm = () =>
     cancelAppointment.mutate(
       { id: appointment.id, reason: finalReason || undefined },
-      { onSuccess: onClose },
+      {
+        onSuccess: () => {
+          notify.success(
+            "Appointment cancelled",
+            `${patient.firstName} ${patient.lastName} · ${format(new Date(appointment.startsAt), "EEE, d MMM yyyy · HH:mm")}`,
+          );
+          onClose();
+        },
+      },
     );
 
   return (

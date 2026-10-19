@@ -5,6 +5,7 @@ import Button from "../../shared/ui/Button";
 import Input from "../../shared/ui/Input";
 import Modal from "../../shared/ui/Modal";
 import Select from "../../shared/ui/Select";
+import { notify } from "../../utils/notify";
 import { dayLabels, toTime, weekOrder } from "../../utils/schedule";
 import { getDoctorName } from "../doctors/DoctorCard";
 
@@ -58,6 +59,7 @@ function EditScheduleModal({ doctor, onClose }: EditScheduleModalProps) {
 
     try {
       await updateSchedule.mutateAsync({ doctorId: doctor.id, schedule });
+      notify.success(`Schedule updated for ${getDoctorName(doctor)}`);
       onClose();
     } catch (mutationError) {
       setError(

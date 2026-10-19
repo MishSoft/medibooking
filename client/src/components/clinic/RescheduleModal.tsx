@@ -13,6 +13,7 @@ import Button from "../../shared/ui/Button";
 import DatePicker from "../../shared/ui/DatePicker";
 import Modal from "../../shared/ui/Modal";
 import QueryState from "../../shared/ui/QueryState";
+import { notify } from "../../utils/notify";
 import { isWorkingDay } from "../../utils/schedule";
 import TimeSlotPicker from "../booking/TimeSlotPicker";
 import { getDoctorName } from "../doctors/DoctorCard";
@@ -56,10 +57,20 @@ function RescheduleModal({ appointment, onClose }: RescheduleModalProps) {
     reschedule.mutate(
       { id: appointment.id, startsAt: slot.toISOString() },
       {
-        onSuccess: onClose,
+        onSuccess: () => {
+          notify.success(
+            "Appointment rescheduled",
+            `${appointment.patient.firstName} ${appointment.patient.lastName} · ${format(slot, "EEE, d MMM yyyy · HH:mm")}`,
+          );
+          onClose();
+        },
         onError: (error) => {
           // Someone else took the slot meanwhile — show fresh availability
           if (error instanceof ApiError && error.status === 409) {
+            notify.warning(
+              "That time slot was just taken",
+              "Please pick another available time.",
+            );
             setSlot(undefined);
             void queryClient.invalidateQueries({
               queryKey: [...clinicQueryKey, "slots"],
