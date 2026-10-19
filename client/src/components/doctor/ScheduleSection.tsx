@@ -16,7 +16,9 @@ import Button from "../../shared/ui/Button";
 import DatePicker from "../../shared/ui/DatePicker";
 import EmptyState from "../../shared/ui/EmptyState";
 import QueryState from "../../shared/ui/QueryState";
+import { notify } from "../../utils/notify";
 import DoctorAppointmentCard from "./DoctorAppointmentCard";
+import { getPatientName } from "./PatientVisitCard";
 import VisitRecordModal from "./VisitRecordModal";
 import WorkingHoursSummary from "./WorkingHoursSummary";
 
@@ -147,7 +149,15 @@ function ScheduleSection() {
           onSubmit={(record) =>
             completeAppointment.mutate(
               { id: toComplete.id, record },
-              { onSuccess: () => setToComplete(null) },
+              {
+                onSuccess: () => {
+                  notify.success(
+                    "Visit completed",
+                    `Record saved for ${getPatientName(toComplete.patient)}.`,
+                  );
+                  setToComplete(null);
+                },
+              },
             )
           }
           pendingLabel="Completing…"

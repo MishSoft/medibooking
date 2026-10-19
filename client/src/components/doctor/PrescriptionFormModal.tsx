@@ -12,6 +12,7 @@ import Input from "../../shared/ui/Input";
 import Modal from "../../shared/ui/Modal";
 import Select from "../../shared/ui/Select";
 import Textarea from "../../shared/ui/Textarea";
+import { notify } from "../../utils/notify";
 import { getPatientName } from "./PatientVisitCard";
 
 type PrescriptionFormModalProps = {
@@ -75,12 +76,22 @@ function PrescriptionFormModal({
       updatePrescription.mutate(
         // Empty string clears the instructions on the server
         { id: prescription.id, payload: { ...fields, instructions } },
-        { onSuccess: onClose },
+        {
+          onSuccess: () => {
+            notify.success("Prescription updated");
+            onClose();
+          },
+        },
       );
     } else {
       addPrescription.mutate(
         { patientId, ...fields, instructions: instructions || undefined },
-        { onSuccess: onClose },
+        {
+          onSuccess: () => {
+            notify.success("Prescription added");
+            onClose();
+          },
+        },
       );
     }
   };

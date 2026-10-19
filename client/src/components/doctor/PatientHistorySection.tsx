@@ -9,6 +9,7 @@ import { getVisitHistory } from "../../utils/appointments";
 import EmptyState from "../../shared/ui/EmptyState";
 import Input from "../../shared/ui/Input";
 import QueryState from "../../shared/ui/QueryState";
+import { notify } from "../../utils/notify";
 import PatientVisitCard, { getPatientName } from "./PatientVisitCard";
 import VisitRecordModal from "./VisitRecordModal";
 
@@ -79,7 +80,15 @@ function PatientHistorySection() {
           onSubmit={(record) =>
             updateVisitRecord.mutate(
               { id: toEdit.id, record },
-              { onSuccess: () => setToEdit(null) },
+              {
+                onSuccess: () => {
+                  notify.success(
+                    "Visit record updated",
+                    `Changes saved for ${getPatientName(toEdit.patient)}.`,
+                  );
+                  setToEdit(null);
+                },
+              },
             )
           }
           pendingLabel="Saving…"
