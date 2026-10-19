@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { addMonths, isWeekend, startOfToday } from "date-fns";
+import { addMonths, format, isWeekend, startOfToday } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "../../api/client";
 import { BadgeCheckIcon } from "../../assets/icons/Icons";
 import { useBookAppointment } from "../../hooks/useAppointments";
 import { doctorsQueryKey, useDoctorSlots } from "../../hooks/useDoctors";
 import type { Doctor, Weekday } from "../../types/doctor";
+import { notify } from "../../utils/notify";
 import Button from "../../shared/ui/Button";
 import DatePicker from "../../shared/ui/DatePicker";
 import FieldError from "../../shared/ui/FieldError";
@@ -77,12 +78,20 @@ function BookingModal({ doctor, onClose }: BookingModalProps) {
       { doctor, startsAt: slot.toISOString() },
       {
         onSuccess: () => {
+          notify.success(
+            "Booking confirmed",
+            `${getDoctorName(doctor)} · ${format(slot, "d MMMM 'at' HH:mm")}`,
+          );
           setIsConfirmed(true);
           void refreshSlots();
         },
         onError: (error) => {
           // Someone else took the slot meanwhile — show fresh availability
           if (error instanceof ApiError && error.status === 409) {
+            notify.warning(
+              "That time slot was just taken",
+              "Please pick another available time.",
+            );
             setSlot(undefined);
             void refreshSlots();
           }

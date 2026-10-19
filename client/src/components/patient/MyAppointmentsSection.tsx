@@ -7,6 +7,7 @@ import {
 } from "../../hooks/useAppointments";
 import type { Appointment } from "../../types/appointment";
 import { getUpcomingAppointments } from "../../utils/appointments";
+import { notify } from "../../utils/notify";
 import Button from "../../shared/ui/Button";
 import FieldError from "../../shared/ui/FieldError";
 import Modal from "../../shared/ui/Modal";
@@ -31,7 +32,13 @@ function MyAppointmentsSection({ onFindDoctor }: MyAppointmentsSectionProps) {
   const handleConfirmCancel = () => {
     if (!toCancel) return;
     cancelAppointment.mutate(toCancel.id, {
-      onSuccess: () => setToCancel(null),
+      onSuccess: () => {
+        notify.success(
+          "Appointment cancelled",
+          `Your visit with ${getDoctorName(toCancel.doctor)} on ${format(new Date(toCancel.startsAt), "d MMMM 'at' HH:mm")} was cancelled.`,
+        );
+        setToCancel(null);
+      },
     });
   };
 
