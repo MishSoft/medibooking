@@ -14,6 +14,8 @@ export type ClinicDto = {
   id: string;
   name: string;
   address: string | null;
+  // Only on GET /api/clinics
+  doctorCount?: number;
 };
 
 export type DoctorDto = {
@@ -57,6 +59,7 @@ export const toClinic = (dto: ClinicDto): Clinic => ({
   id: dto.id,
   name: dto.name,
   address: dto.address ?? "",
+  doctorCount: dto.doctorCount,
 });
 
 export const toDoctor = (dto: DoctorDto): Doctor => ({

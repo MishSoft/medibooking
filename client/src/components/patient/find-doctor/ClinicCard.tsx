@@ -1,5 +1,6 @@
 import { ClinicBuildingIcon } from "../../../assets/icons/Icons";
 import type { Clinic } from "../../../types/doctor";
+import Tag from "../../../shared/ui/Tag";
 
 type ClinicCardProps = {
   clinic: Clinic;
@@ -23,6 +24,14 @@ function ClinicCard({ clinic, onSelect }: ClinicCardProps) {
         <span className="mt-1 block text-body-sm text-on-surface-variant">
           {clinic.address}
         </span>
+        {clinic.doctorCount !== undefined && (
+          <span className="mt-3 block">
+            <Tag tone="secondary">
+              {clinic.doctorCount}{" "}
+              {clinic.doctorCount === 1 ? "doctor" : "doctors"}
+            </Tag>
+          </span>
+        )}
       </span>
     </button>
   );

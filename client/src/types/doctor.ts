@@ -2,6 +2,8 @@ export type Clinic = {
   id: string;
   name: string;
   address: string;
+  // Only returned by the clinics list
+  doctorCount?: number;
 };
 
 // 0 = Sunday … 6 = Saturday (Date#getDay). The server uses 1 = Monday … 7 =
