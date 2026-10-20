@@ -225,8 +225,83 @@ const options: swaggerJsdoc.Options = {
         get: {
           summary: "კლინიკების სიის წამოღება",
           tags: ["Clinics"],
+          description:
+            "თითოეული კლინიკა შეიცავს doctorCount-ს (ექიმების რაოდენობა). ექიმები გრაფიკის გარეშეც ითვლება; ექიმების გარეშე კლინიკას doctorCount: 0 აქვს.",
           responses: {
-            200: { description: "კლინიკების სია წარმატებით წამოიღო" },
+            200: {
+              description: "კლინიკების სია წარმატებით წამოიღო",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      data: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            id: { type: "string", example: "c1" },
+                            name: { type: "string", example: "City Clinic" },
+                            address: { type: "string", example: "12 Main St" },
+                            doctorCount: { type: "integer", example: 9 },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/clinics/{clinicId}/specialties": {
+        get: {
+          summary: "კლინიკის სპეციალობების სია ექიმების რაოდენობით",
+          description:
+            "აბრუნებს კლინიკის სპეციალობებს (primarySpecialty) და თითოეულში ექიმების რაოდენობას, ანბანის მიხედვით. მხოლოდ ის სპეციალობები, სადაც მინიმუმ ერთი ექიმია. ექიმების გარეშე კლინიკა აბრუნებს data: []. ექიმების სიისთვის გამოიყენეთ GET /api/doctors?clinicId=&specialty=&search=.",
+          tags: ["Clinics"],
+          parameters: [
+            {
+              name: "clinicId",
+              in: "path",
+              required: true,
+              description: "კლინიკის ID (იგივე, რაც GET /api/clinics-იდან)",
+              schema: { type: "string" },
+            },
+          ],
+          responses: {
+            200: {
+              description: "სპეციალობების სია წარმატებით წამოიღო",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      data: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            specialty: {
+                              type: "string",
+                              example: "Cardiology",
+                            },
+                            doctorCount: { type: "integer", example: 4 },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            404: {
+              description: "კლინიკა ვერ მოიძებნა (success: false, message)",
+            },
+            500: { description: "სერვერის შიდა შეცდომა" },
           },
         },
       },

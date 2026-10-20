@@ -17,12 +17,57 @@ export const getClinics = async (_req: Request, res: Response) => {
         id: true,
         name: true,
         address: true,
+        _count: { select: { doctors: true } },
       },
     });
 
-    return res.status(200).json({ success: true, data: clinics });
+    const data = clinics.map(({ _count, ...clinic }) => ({
+      ...clinic,
+      doctorCount: _count.doctors,
+    }));
+
+    return res.status(200).json({ success: true, data });
   } catch (error) {
     console.error("Error fetching clinics:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+    });
+  }
+};
+
+export const getClinicSpecialties = async (req: Request, res: Response) => {
+  try {
+    const clinicId = String(req.params.clinicId);
+
+    const clinic = await prisma.clinic.findUnique({
+      where: { id: clinicId },
+      select: { id: true },
+    });
+
+    if (!clinic) {
+      return res.status(404).json({
+        success: false,
+        message: "Clinic not found.",
+      });
+    }
+
+    const groups = await prisma.doctorProfile.groupBy({
+      by: ["primarySpecialty"],
+      where: { clinicId },
+      _count: { _all: true },
+    });
+
+    const data = groups
+      .map((group) => ({
+        specialty: group.primarySpecialty,
+        doctorCount: group._count._all,
+      }))
+      .sort((a, b) => a.specialty.localeCompare(b.specialty));
+
+    return res.status(200).json({ success: true, data });
+  } catch (error) {
+    console.error("Error fetching clinic specialties:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error.",
