@@ -21,6 +21,7 @@ import {
   type PatientRegistrationFormInput,
   type PatientRegistrationFormOutput,
 } from "../../schemas/patientRegistration.schema";
+import { MOBILE_NUMBER_LENGTH } from "../../schemas/phone.schema";
 import { toPatientRegisterPayload } from "../../api/auth.api";
 import { authStorage } from "../../api/auth.storage";
 import { useRegisterPatient } from "../../hooks/useRegisterPatient";
@@ -226,7 +227,9 @@ function PatientRegistrationPage() {
                   leadingElement={
                     <span className="text-label-md">+995 (GE)</span>
                   }
-                  placeholder="599 12 34 56"
+                  inputMode="numeric"
+                  maxLength={MOBILE_NUMBER_LENGTH}
+                  placeholder="599123456"
                   required
                   type="tel"
                   {...register("phone")}
