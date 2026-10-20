@@ -1,6 +1,7 @@
 import type { TimeSlot } from "../types/booking";
 import type {
   Clinic,
+  ClinicSpecialty,
   Doctor,
   DoctorFiltersValue,
   DoctorSchedule,
@@ -115,5 +116,11 @@ export const doctorsApi = {
   clinics: async (): Promise<Clinic[]> => {
     const response = await apiRequest<ApiResponse<ClinicDto[]>>("api/clinics");
     return (response.data ?? []).map(toClinic);
+  },
+  clinicSpecialties: async (clinicId: string): Promise<ClinicSpecialty[]> => {
+    const response = await apiRequest<ApiResponse<ClinicSpecialty[]>>(
+      `api/clinics/${clinicId}/specialties`,
+    );
+    return response.data ?? [];
   },
 };

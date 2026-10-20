@@ -42,3 +42,11 @@ export function useClinics() {
     queryFn: doctorsApi.clinics,
   });
 }
+
+export function useClinicSpecialties(clinicId: string | undefined) {
+  return useQuery({
+    queryKey: ["clinics", clinicId, "specialties"],
+    queryFn: () => doctorsApi.clinicSpecialties(clinicId!),
+    enabled: !!clinicId,
+  });
+}

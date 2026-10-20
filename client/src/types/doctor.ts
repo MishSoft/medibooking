@@ -6,6 +6,11 @@ export type Clinic = {
   doctorCount?: number;
 };
 
+export type ClinicSpecialty = {
+  specialty: string;
+  doctorCount: number;
+};
+
 // 0 = Sunday … 6 = Saturday (Date#getDay). The server uses 1 = Monday … 7 =
 // Sunday; api/doctors.api.ts converts between the two.
 export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
