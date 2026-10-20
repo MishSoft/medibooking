@@ -1,45 +1,73 @@
-import { useState } from "react";
-import { useDebouncedValue } from "../../hooks/useDebouncedValue";
-import { useClinics, useDoctors, useSpecialties } from "../../hooks/useDoctors";
+import { useSearchParams } from "react-router";
+import { useClinics } from "../../hooks/useDoctors";
 import type { Doctor } from "../../types/doctor";
-import QueryState from "../../shared/ui/QueryState";
-import DoctorFilters, { emptyDoctorFilters } from "../doctors/DoctorFilters";
-import DoctorList from "../doctors/DoctorList";
+import Breadcrumbs, { type BreadcrumbItem } from "../../shared/ui/Breadcrumbs";
+import ClinicsStep from "./find-doctor/ClinicsStep";
+import DoctorsStep from "./find-doctor/DoctorsStep";
+import SpecialtiesStep from "./find-doctor/SpecialtiesStep";
 
 type FindDoctorSectionProps = {
   onBook?: (doctor: Doctor) => void;
 };
 
+// Drill-down: clinics → clinic specialties → doctors. The current step lives
+// in the URL (?clinic=&specialty=) so back/forward, reloads and links work.
 function FindDoctorSection({ onBook }: FindDoctorSectionProps) {
-  const [filters, setFilters] = useState(emptyDoctorFilters);
-  // Debounce only the free-text search; selects apply immediately
-  const debouncedQuery = useDebouncedValue(filters.query);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const clinicId = searchParams.get("clinic") ?? "";
+  const specialty = clinicId ? (searchParams.get("specialty") ?? "") : "";
 
-  const { data: specialties = [] } = useSpecialties();
+  // Already cached by the clinics step; used for the breadcrumb label
   const { data: clinics = [] } = useClinics();
-  const {
-    data: doctors = [],
-    isPending,
-    isFetching,
-    error,
-  } = useDoctors({ ...filters, query: debouncedQuery });
+  const clinicName =
+    clinics.find((clinic) => clinic.id === clinicId)?.name ?? "Clinic";
+
+  const navigate = (next: { clinic?: string; specialty?: string }) => {
+    setSearchParams((params) => {
+      const updated = new URLSearchParams(params);
+      updated.delete("clinic");
+      updated.delete("specialty");
+      if (next.clinic) updated.set("clinic", next.clinic);
+      if (next.clinic && next.specialty)
+        updated.set("specialty", next.specialty);
+      return updated;
+    });
+  };
+
+  const breadcrumbs: BreadcrumbItem[] = [
+    { label: "Clinics", onClick: () => navigate({}) },
+  ];
+  if (clinicId) {
+    breadcrumbs.push({
+      label: clinicName,
+      onClick: () => navigate({ clinic: clinicId }),
+    });
+  }
+  if (specialty) {
+    breadcrumbs.push({ label: specialty });
+  }
 
   return (
     <div className="space-y-6">
-      <DoctorFilters
-        clinics={clinics}
-        onChange={setFilters}
-        specialties={specialties}
-        value={filters}
-      />
-      <QueryState error={error} isPending={isPending}>
-        <p aria-live="polite" className="text-body-sm text-on-surface-variant">
-          {isFetching
-            ? "Searching…"
-            : `${doctors.length} ${doctors.length === 1 ? "doctor" : "doctors"} found`}
-        </p>
-        <DoctorList doctors={doctors} onBook={onBook} />
-      </QueryState>
+      <Breadcrumbs items={breadcrumbs} />
+      {!clinicId ? (
+        <ClinicsStep onSelect={(clinic) => navigate({ clinic: clinic.id })} />
+      ) : !specialty ? (
+        <SpecialtiesStep
+          clinicId={clinicId}
+          key={clinicId}
+          onSelect={(selected) =>
+            navigate({ clinic: clinicId, specialty: selected })
+          }
+        />
+      ) : (
+        <DoctorsStep
+          clinicId={clinicId}
+          key={`${clinicId}-${specialty}`}
+          onBook={onBook}
+          specialty={specialty}
+        />
+      )}
     </div>
   );
 }

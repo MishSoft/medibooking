@@ -12,7 +12,7 @@ function DoctorList({ doctors, onBook }: DoctorListProps) {
   if (doctors.length === 0) {
     return (
       <EmptyState
-        description="Try a different name, specialty or clinic."
+        description="Try a different doctor name."
         icon={SearchIcon}
         title="No doctors found"
       />

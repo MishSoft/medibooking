@@ -14,13 +14,6 @@ export function useDoctors(filters: DoctorFiltersValue) {
   });
 }
 
-export function useSpecialties() {
-  return useQuery({
-    queryKey: [...doctorsQueryKey, "specialties"],
-    queryFn: doctorsApi.specialties,
-  });
-}
-
 export const doctorSlotsQueryKey = (doctorId: string, date: string) =>
   [...doctorsQueryKey, doctorId, "slots", date] as const;
 
@@ -40,5 +33,13 @@ export function useClinics() {
   return useQuery({
     queryKey: ["clinics"],
     queryFn: doctorsApi.clinics,
+  });
+}
+
+export function useClinicSpecialties(clinicId: string | undefined) {
+  return useQuery({
+    queryKey: ["clinics", clinicId, "specialties"],
+    queryFn: () => doctorsApi.clinicSpecialties(clinicId!),
+    enabled: !!clinicId,
   });
 }

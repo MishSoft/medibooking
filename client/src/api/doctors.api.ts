@@ -1,6 +1,7 @@
 import type { TimeSlot } from "../types/booking";
 import type {
   Clinic,
+  ClinicSpecialty,
   Doctor,
   DoctorFiltersValue,
   DoctorSchedule,
@@ -14,6 +15,8 @@ export type ClinicDto = {
   id: string;
   name: string;
   address: string | null;
+  // Only on GET /api/clinics
+  doctorCount?: number;
 };
 
 export type DoctorDto = {
@@ -57,6 +60,7 @@ export const toClinic = (dto: ClinicDto): Clinic => ({
   id: dto.id,
   name: dto.name,
   address: dto.address ?? "",
+  doctorCount: dto.doctorCount,
 });
 
 export const toDoctor = (dto: DoctorDto): Doctor => ({
@@ -93,12 +97,6 @@ export const doctorsApi = {
     );
     return (response.data ?? []).map(toDoctor);
   },
-  specialties: async (): Promise<string[]> => {
-    const response = await apiRequest<ApiResponse<string[]>>(
-      "api/doctors/specialties",
-    );
-    return response.data ?? [];
-  },
   // date: "yyyy-MM-dd", interpreted by the server in clinic time
   slots: async (doctorId: string, date: string): Promise<TimeSlot[]> => {
     const response = await apiRequest<ApiResponse<TimeSlotDto[]>>(
@@ -112,5 +110,11 @@ export const doctorsApi = {
   clinics: async (): Promise<Clinic[]> => {
     const response = await apiRequest<ApiResponse<ClinicDto[]>>("api/clinics");
     return (response.data ?? []).map(toClinic);
+  },
+  clinicSpecialties: async (clinicId: string): Promise<ClinicSpecialty[]> => {
+    const response = await apiRequest<ApiResponse<ClinicSpecialty[]>>(
+      `api/clinics/${clinicId}/specialties`,
+    );
+    return response.data ?? [];
   },
 };
