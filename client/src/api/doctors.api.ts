@@ -97,12 +97,6 @@ export const doctorsApi = {
     );
     return (response.data ?? []).map(toDoctor);
   },
-  specialties: async (): Promise<string[]> => {
-    const response = await apiRequest<ApiResponse<string[]>>(
-      "api/doctors/specialties",
-    );
-    return response.data ?? [];
-  },
   // date: "yyyy-MM-dd", interpreted by the server in clinic time
   slots: async (doctorId: string, date: string): Promise<TimeSlot[]> => {
     const response = await apiRequest<ApiResponse<TimeSlotDto[]>>(

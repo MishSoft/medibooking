@@ -11,7 +11,7 @@ function ClinicCard({ clinic, onSelect }: ClinicCardProps) {
   return (
     <button
       aria-label={`View specialties at ${clinic.name}`}
-      className="flex h-full w-full items-start gap-4 rounded-xl bg-surface-container p-5 text-left shadow-elevation-2 transition-shadow hover:shadow-elevation-3 focus-visible:outline-2 focus-visible:outline-primary"
+      className="flex h-full cursor-pointer w-full items-start gap-4 rounded-xl bg-surface-container p-5 text-left shadow-elevation-2 transition-shadow hover:shadow-elevation-3 focus-visible:outline-2 focus-visible:outline-primary"
       onClick={() => onSelect(clinic)}
       type="button"
     >

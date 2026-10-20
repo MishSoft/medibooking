@@ -14,13 +14,6 @@ export function useDoctors(filters: DoctorFiltersValue) {
   });
 }
 
-export function useSpecialties() {
-  return useQuery({
-    queryKey: [...doctorsQueryKey, "specialties"],
-    queryFn: doctorsApi.specialties,
-  });
-}
-
 export const doctorSlotsQueryKey = (doctorId: string, date: string) =>
   [...doctorsQueryKey, doctorId, "slots", date] as const;
 

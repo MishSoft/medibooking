@@ -35,7 +35,7 @@ function Breadcrumbs({ items }: BreadcrumbsProps) {
                 </span>
               ) : (
                 <button
-                  className="rounded-sm text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary"
+                  className="cursor-pointer rounded-sm text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary"
                   onClick={item.onClick}
                   type="button"
                 >
