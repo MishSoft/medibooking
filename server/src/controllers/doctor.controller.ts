@@ -54,33 +54,16 @@ export const getDoctors = async (req: Request, res: Response) => {
       where.clinicId = String(clinicId);
     }
 
-    if (search) {
-      const searchTerm = String(search);
+    if (search && String(search).trim()) {
+      const words = String(search).trim().split(/\s+/);
 
-      where.OR = [
-        {
-          user: {
-            firstName: {
-              contains: searchTerm,
-              mode: "insensitive",
-            },
-          },
-        },
-        {
-          user: {
-            lastName: {
-              contains: searchTerm,
-              mode: "insensitive",
-            },
-          },
-        },
-        {
-          primarySpecialty: {
-            contains: searchTerm,
-            mode: "insensitive",
-          },
-        },
-      ];
+      where.AND = words.map((word) => ({
+        OR: [
+          { user: { firstName: { contains: word, mode: "insensitive" } } },
+          { user: { lastName: { contains: word, mode: "insensitive" } } },
+          { primarySpecialty: { contains: word, mode: "insensitive" } },
+        ],
+      }));
     }
 
     const doctors = await prisma.doctorProfile.findMany({

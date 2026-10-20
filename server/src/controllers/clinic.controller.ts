@@ -13,6 +13,7 @@ import {
 export const getClinics = async (_req: Request, res: Response) => {
   try {
     const clinics = await prisma.clinic.findMany({
+      orderBy: { name: "asc" },
       select: {
         id: true,
         name: true,
