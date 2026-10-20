@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   getClinics,
+  getClinicSpecialties,
   getClinicDoctors,
   updateClinicDoctorSchedule,
   getClinicAppointments,
@@ -14,6 +15,7 @@ const router = Router();
 
 // Public clinics endpoint
 router.get("/clinics", getClinics);
+router.get("/clinics/:clinicId/specialties", getClinicSpecialties);
 
 // Clinic admin: get doctors belonging to their clinic
 router.get(
