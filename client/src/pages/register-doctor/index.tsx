@@ -24,6 +24,7 @@ import {
   type DoctorRegistrationFormInput,
   type DoctorRegistrationFormOutput,
 } from "../../schemas/doctorRegistration.schema";
+import { MOBILE_NUMBER_LENGTH } from "../../schemas/phone.schema";
 import { toDoctorRegisterPayload } from "../../api/auth.api";
 import { useMe } from "../../hooks/useMe";
 import { useRegisterDoctor } from "../../hooks/useRegisterDoctor";
@@ -374,7 +375,9 @@ function DoctorRegistrationPage() {
                   leadingElement={
                     <span className="text-label-md text-primary">+995</span>
                   }
-                  placeholder="599 44 88 12"
+                  inputMode="numeric"
+                  maxLength={MOBILE_NUMBER_LENGTH}
+                  placeholder="599448812"
                   required
                   type="tel"
                   {...register("phone")}
@@ -388,7 +391,9 @@ function DoctorRegistrationPage() {
                   leadingElement={
                     <span className="text-label-md text-primary">+995</span>
                   }
-                  placeholder="599 98 76 54"
+                  inputMode="numeric"
+                  maxLength={MOBILE_NUMBER_LENGTH}
+                  placeholder="599987654"
                   required
                   type="tel"
                   {...register("emergencyPhone")}

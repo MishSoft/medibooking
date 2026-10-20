@@ -1,6 +1,7 @@
 // Client-only registration form schema, built on the mirrored server clinicRegisterSchema
 import { z } from "zod";
 import { clinicRegisterSchema } from "./auth.schema";
+import { mobileNumberSchema } from "./phone.schema";
 
 const mustBeChecked = (message: string) =>
   z.boolean().refine((value) => value, message);
@@ -8,6 +9,7 @@ const mustBeChecked = (message: string) =>
 export const clinicRegistrationFormSchema = clinicRegisterSchema
   .omit({ role: true })
   .extend({
+    phone: mobileNumberSchema,
     address: z.string().min(1, "Street address is required"),
     city: z.string().min(1, "City / region is required"),
     postalCode: z.string().min(1, "Postal code is required"),

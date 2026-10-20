@@ -2,16 +2,10 @@
 import { z } from "zod";
 import { Gender } from "../types/enums";
 import { doctorRegisterSchema } from "./auth.schema";
+import { mobileNumberSchema } from "./phone.schema";
 
 const mustBeChecked = (message: string) =>
   z.boolean().refine((value) => value, message);
-
-const georgianMobile = z
-  .string()
-  .regex(
-    /^5\d{2} ?\d{2} ?\d{2} ?\d{2}$/,
-    "Enter a valid Georgian mobile number, e.g. 599 44 88 12",
-  );
 
 export const doctorRegistrationFormSchema = doctorRegisterSchema
   .omit({ role: true })
@@ -53,8 +47,8 @@ export const doctorRegistrationFormSchema = doctorRegisterSchema
       .min(0, "Years of practice cannot be negative")
       .max(70, "Years of practice looks too high"),
     clinicId: z.string().uuid("Select an associated facility"),
-    phone: georgianMobile,
-    emergencyPhone: georgianMobile,
+    phone: mobileNumberSchema,
+    emergencyPhone: mobileNumberSchema,
     city: z.string().min(1, "Region / city is required"),
     bio: z
       .string()

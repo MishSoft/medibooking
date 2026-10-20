@@ -2,10 +2,12 @@
 import { z } from "zod";
 import { Gender } from "../types/enums";
 import { patientRegisterSchema } from "./auth.schema";
+import { mobileNumberSchema } from "./phone.schema";
 
 export const patientRegistrationFormSchema = patientRegisterSchema
   .omit({ role: true })
   .extend({
+    phone: mobileNumberSchema,
     gender: z.enum(Gender, "Select a gender"),
     birthDate: z.string().min(1, "Date of birth is required"),
     personalId: z

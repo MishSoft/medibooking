@@ -21,6 +21,7 @@ import {
   type ClinicRegistrationFormInput,
   type ClinicRegistrationFormOutput,
 } from "../../schemas/clinicRegistration.schema";
+import { MOBILE_NUMBER_LENGTH } from "../../schemas/phone.schema";
 import { toClinicRegisterPayload } from "../../api/auth.api";
 import { authStorage } from "../../api/auth.storage";
 import { useRegisterClinic } from "../../hooks/useRegisterClinic";
@@ -232,7 +233,9 @@ function ClinicRegistrationPage() {
                   leadingElement={
                     <span className="text-label-md">+995 (GE)</span>
                   }
-                  placeholder="599 11 22 33"
+                  inputMode="numeric"
+                  maxLength={MOBILE_NUMBER_LENGTH}
+                  placeholder="599112233"
                   required
                   type="tel"
                   {...register("phone")}
