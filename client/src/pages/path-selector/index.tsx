@@ -26,12 +26,15 @@ function PathSelectorPage() {
   );
 
   return (
-    <main className="relative isolate min-h-screen overflow-hidden bg-[#060E20]">
+    <main className="relative isolate min-h-screen overflow-hidden bg-[#060E20] max-[1300px]:flex max-[1300px]:h-dvh max-[1300px]:min-h-0 max-[1300px]:flex-col">
       <div
         className="relative z-[9] h-screen w-screen -translate-x-1/2 skew-x-[-15deg]
          bg-[linear-gradient(90deg,#071913_0%,#0B1326_50%,#0A1B24_100%)]
          after:absolute after:right-0 after:top-0 after:h-full after:w-[1px]
-         after:bg-[repeating-linear-gradient(to_bottom,#4EDEA3_0_4px,transparent_4px_6px)]"
+         after:bg-[repeating-linear-gradient(to_bottom,#4EDEA3_0_4px,transparent_4px_6px)]
+         max-[1300px]:h-1/2 max-[1300px]:w-full max-[1300px]:translate-none max-[1300px]:transform-none
+         max-[1300px]:after:top-auto max-[1300px]:after:bottom-0 max-[1300px]:after:h-px max-[1300px]:after:w-full
+         max-[1300px]:after:bg-[repeating-linear-gradient(to_right,#4EDEA3_0_4px,transparent_4px_6px)]"
       >
         <div
           aria-hidden="true"
@@ -44,11 +47,15 @@ function PathSelectorPage() {
         <img
           alt=""
           aria-hidden="true"
-          className="pointer-events-none absolute bottom-12 left-[58%] w-28 skew-x-[15deg] sm:w-36 lg:w-40"
+          className="pointer-events-none absolute bottom-12 left-[58%] w-28 skew-x-[15deg] sm:w-36 lg:w-40 max-[1300px]:transform-none"
           src="/assets/icons/charty-line.svg"
         />
-        <section className="absolute inset-0 flex items-center justify-end px-6 py-5 sm:px-10 lg:pr-[calc(7vw+100px)] lg:pl-[7vw]">
-          <div className="w-full max-w-[560px] skew-x-[15deg] max-[1600px]:zoom-[0.8] [@media(max-height:800px)]:zoom-[0.8]">
+        <section className="absolute inset-0 flex items-center justify-end px-6 py-5 sm:px-10 lg:pr-[calc(7vw+100px)] lg:pl-[7vw] max-[1300px]:justify-center max-[1300px]:overflow-hidden max-[1300px]:px-6 max-[1300px]:pt-8 max-[1300px]:pb-3">
+          <div
+            className="path-selector-content path-selector-content--top w-full max-w-[560px] skew-x-[15deg]
+             max-[1300px]:grid max-[1300px]:max-w-[1168px] max-[1300px]:grid-cols-2 max-[1300px]:items-start
+             max-[1300px]:gap-x-12 max-[1300px]:transform-none max-[1300px]:*:min-w-0"
+          >
             {showPatientSignIn ? (
               <PatientSignIn
                 onRegisterClick={() => setShowPatientSignIn(false)}
@@ -63,7 +70,7 @@ function PathSelectorPage() {
           </div>
         </section>
       </div>
-      <div className="absolute inset-0 -z-[9] overflow-hidden bg-[linear-gradient(105deg,#03151F_0%,#09152B_50%,#060E20_100%)]">
+      <div className="absolute inset-0 -z-[9] overflow-hidden max-[1300px]:relative max-[1300px]:inset-auto max-[1300px]:h-1/2 bg-[linear-gradient(105deg,#03151F_0%,#09152B_50%,#060E20_100%)]">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute left-[50%] top-[30%] h-100 w-75 rounded-full bg-[#0A2A4A]/50 blur-[90px]"
@@ -78,8 +85,8 @@ function PathSelectorPage() {
           className="pointer-events-none absolute right-0 top-0 w-48 sm:w-64 lg:w-80"
           src="/assets/icons/building-shape.svg"
         />
-        <section className="flex min-h-screen items-center justify-end px-6 py-5 sm:px-10 lg:px-[7vw]">
-          <div className="w-full max-w-[520px] max-[1600px]:zoom-[0.8] [@media(max-height:800px)]:zoom-[0.8]">
+        <section className="flex min-h-screen items-center justify-end px-6 py-5 sm:px-10 lg:px-[7vw] max-[1300px]:h-full max-[1300px]:min-h-0 max-[1300px]:justify-center max-[1300px]:overflow-hidden max-[1300px]:px-6 max-[1300px]:pt-3 max-[1300px]:pb-8">
+          <div className="path-selector-content path-selector-content--bottom w-full max-w-[520px] max-[1300px]:*:ml-0">
             {showClinicSignIn ? (
               <ClinicSignIn
                 onRegisterClick={() => setShowClinicSignIn(false)}
