@@ -1,0 +1,154 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  PATIENT
+  DOCTOR
+  CLINIC_ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  NONBINARY
+  UNDISCLOSED
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  PENDING
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  phone     String
+  role      Role     @default(PATIENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  patientProfile PatientProfile?
+  doctorProfile  DoctorProfile?
+  managedClinic  Clinic?
+  appointments   Appointment[]
+  prescriptions  Prescription[]
+}
+
+model PatientProfile {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  personalId            String?   @unique
+  address               String
+  city                  String
+  gender                Gender    @default(MALE)
+  birthDate             DateTime?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+}
+
+model DoctorProfile {
+  id               String    @id @default(uuid())
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  personalId       String    @unique
+  licenseNo        String    @unique
+  primarySpecialty String
+  yearsOfPractice  Int
+  bio              String?
+  emergencyPhone   String
+  gender           Gender?
+  birthDate        DateTime?
+  city             String
+  clinicId         String
+  clinic           Clinic    @relation(fields: [clinicId], references: [id])
+
+  appointments  Appointment[]
+  prescriptions Prescription[]
+  schedule      DoctorSchedule?
+}
+
+model Clinic {
+  id             String          @id @default(uuid())
+  name           String
+  legalName      String
+  taxId          String          @unique
+  email          String
+  phone          String
+  address        String?
+  publicEmail    String
+  postalCode     String?
+  receptionPhone String
+  adminId        String          @unique
+  admin          User            @relation(fields: [adminId], references: [id])
+  departments    String[]
+  doctors        DoctorProfile[]
+  city           String?
+}
+
+model Appointment {
+  id                 String            @id @default(uuid())
+  patientId          String
+  patient            User              @relation(fields: [patientId], references: [id], onDelete: Cascade, map: "Appointment_patient_fkey_custom")
+  doctorId           String
+  doctor             DoctorProfile     @relation(fields: [doctorId], references: [id], onDelete: Cascade, map: "Appointment_doctor_fkey_custom")
+  startAt            DateTime
+  status             AppointmentStatus @default(SCHEDULED)
+  notes              String?
+  diagnosis          String?
+  createdAt          DateTime          @default(now())
+  rescheduledFrom    DateTime?
+  cancelledAt        DateTime?
+  cancellationReason String?           @db.VarChar(200)
+
+// Double-booking is prevented by partial unique indexes covering
+// SCHEDULED and PENDING appointments. See the SQL migrations.
+// Prisma can't express these partial unique indexes in the schema.
+  @@index([doctorId, startAt])
+  @@index([patientId])
+}
+
+model Prescription {
+  id           String        @id @default(uuid())
+  patientId    String
+  patient      User          @relation(fields: [patientId], references: [id], onDelete: Cascade, map: "Prescription_patient_fkey_custom")
+  doctorId     String
+  doctor       DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade, map: "Prescription_doctor_fkey_custom")
+  medication   String
+  dosage       String
+  frequency    String
+  instructions String?
+  issuedAt     DateTime      @default(now())
+  validUntil   DateTime
+}
+
+model RevokedToken {
+  jti       String   @id
+  expiresAt DateTime
+}
+
+model DoctorSchedule {
+  doctorId    String        @id
+  doctor      DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  workingDays Int[]
+  startTime   String
+  endTime     String
+  slotMinutes Int
+}
