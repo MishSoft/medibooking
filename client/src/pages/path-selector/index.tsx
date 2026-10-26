@@ -85,7 +85,7 @@ function PathSelectorPage() {
           className="pointer-events-none absolute right-0 top-0 w-48 sm:w-64 lg:w-80"
           src="/assets/icons/building-shape.svg"
         />
-        <section className="flex min-h-screen items-center justify-end px-6 py-5 sm:px-10 lg:px-[7vw] max-[1300px]:h-full max-[1300px]:min-h-0 max-[1300px]:justify-center max-[1300px]:overflow-hidden max-[1300px]:px-6 max-[1300px]:pt-3 max-[1300px]:pb-8">
+        <section className="flex min-h-screen items-center justify-end px-6 py-5 sm:px-10 lg:px-[7vw] max-[1300px]:relative max-[1300px]:h-full max-[1300px]:min-h-0 max-[1300px]:justify-center max-[1300px]:overflow-hidden max-[1300px]:px-6 max-[1300px]:pt-3 max-[1300px]:pb-8">
           <div className="path-selector-content path-selector-content--bottom w-full max-w-[520px] max-[1300px]:*:ml-0">
             {showClinicSignIn ? (
               <ClinicSignIn

@@ -20,7 +20,7 @@ function PatientRegistration({ onSignInClick }: PatientRegistrationProps) {
         />
         FOR PATIENTS &amp; FAMILIES
       </div>
-      <h2 className="whitespace-nowrap text-4xl font-bold tracking-tight text-emerald-300 sm:text-5xl">
+      <h2 className="whitespace-nowrap text-4xl font-bold tracking-tight text-emerald-300 sm:text-5xl max-[520px]:whitespace-normal max-[520px]:text-3xl max-[520px]:leading-tight">
         <span className="text-white">Register as a </span> Patient
       </h2>
       <p className="mt-3 max-w-[560px] text-base leading-6 text-slate-300 sm:text-lg sm:leading-7">
