@@ -4,3 +4,4 @@ dist
 .next
 build
 .env
+.env.local
