@@ -1,6 +1,5 @@
 import { createBrowserRouter, redirect } from 'react-router';
 import { authStorage } from '../api/auth.storage';
-import App from '../App';
 import PathSelectorPage from '../pages/path-selector';
 import ClinicRegistrationPage from '../pages/register-clinic';
 import PatientRegistrationPage from '../pages/register-patient';
@@ -9,7 +8,6 @@ import DashboardLayout from '../layouts/DashboardLayout';
 import PatientDashboardPage from '../pages/dashboards/patient';
 import DoctorDashboardPage from '../pages/dashboards/doctor';
 import ClinicDashboardPage from '../pages/dashboards/clinic';
-import { queryClient, postsQueryOptions } from './queryClient';
 import { Role } from '../types/enums';
 
 const dashboardPathByRole: Record<Role, string> = {
@@ -39,9 +37,9 @@ const requireRole = (role: Role) => () => {
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <App />,
-    loader: async () => {
-      return await queryClient.ensureQueryData(postsQueryOptions());
+    loader: () => {
+      const role = getSignedInRole();
+      return redirect(role ? dashboardPathByRole[role] : '/path-selector');
     },
   },
   {
