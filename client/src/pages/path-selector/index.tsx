@@ -48,7 +48,7 @@ function PathSelectorPage() {
           src="/assets/icons/charty-line.svg"
         />
         <section className="absolute inset-0 flex items-center justify-end px-6 py-5 sm:px-10 lg:pr-[calc(7vw+100px)] lg:pl-[7vw]">
-          <div className="w-full max-w-[560px] skew-x-[15deg]">
+          <div className="w-full max-w-[560px] skew-x-[15deg] max-[1600px]:zoom-[0.8] [@media(max-height:800px)]:zoom-[0.8]">
             {showPatientSignIn ? (
               <PatientSignIn
                 onRegisterClick={() => setShowPatientSignIn(false)}
@@ -79,7 +79,7 @@ function PathSelectorPage() {
           src="/assets/icons/building-shape.svg"
         />
         <section className="flex min-h-screen items-center justify-end px-6 py-5 sm:px-10 lg:px-[7vw]">
-          <div className="w-full max-w-[520px]">
+          <div className="w-full max-w-[520px] max-[1600px]:zoom-[0.8] [@media(max-height:800px)]:zoom-[0.8]">
             {showClinicSignIn ? (
               <ClinicSignIn
                 onRegisterClick={() => setShowClinicSignIn(false)}
