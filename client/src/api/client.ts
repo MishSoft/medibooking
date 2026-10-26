@@ -1,7 +1,7 @@
 import { authStorage } from "./auth.storage";
 
 // TODO: move to an env variable (import.meta.env.VITE_API_URL)
-export const BASE_URL = "http://localhost:5000/";
+export const BASE_URL = "https://medibooking.onrender.com/";
 
 const SIGN_IN_PATH = "/path-selector";
 
