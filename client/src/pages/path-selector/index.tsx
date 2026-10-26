@@ -32,7 +32,7 @@ function PathSelectorPage() {
          bg-[linear-gradient(90deg,#071913_0%,#0B1326_50%,#0A1B24_100%)]
          after:absolute after:right-0 after:top-0 after:h-full after:w-[1px]
          after:bg-[repeating-linear-gradient(to_bottom,#4EDEA3_0_4px,transparent_4px_6px)]
-         max-[1300px]:h-1/2 max-[1300px]:w-full max-[1300px]:translate-none max-[1300px]:transform-none
+         max-[1300px]:h-1/2 max-[1300px]:w-full max-[1300px]:overflow-hidden max-[1300px]:translate-none max-[1300px]:transform-none
          max-[1300px]:after:top-auto max-[1300px]:after:bottom-0 max-[1300px]:after:h-px max-[1300px]:after:w-full
          max-[1300px]:after:bg-[repeating-linear-gradient(to_right,#4EDEA3_0_4px,transparent_4px_6px)]"
       >
