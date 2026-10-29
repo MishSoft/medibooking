@@ -243,9 +243,25 @@ export class AuthService {
     let user = null;
 
     if (data.identifier.includes("@")) {
-      user = await prisma.user.findUnique({
+      const found = await prisma.user.findUnique({
         where: { email: data.identifier },
+        include: { patientProfile: true },
       });
+
+      if (found) {
+        if (found.role === Role.PATIENT) {
+          // Patients must provide a matching personal ID as well as the email.
+          if (
+            data.personalId &&
+            found.patientProfile?.personalId === data.personalId
+          ) {
+            user = found;
+          }
+        } else {
+          // Doctors / clinic admins: email + password only.
+          user = found;
+        }
+      }
     } else {
       const doctorProfile = await prisma.doctorProfile.findUnique({
         where: { licenseNo: data.identifier },

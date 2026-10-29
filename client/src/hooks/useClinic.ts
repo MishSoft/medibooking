@@ -26,7 +26,7 @@ export function useClinicAppointments(filters: ClinicAppointmentsFilters = {}) {
   return useQuery({
     queryKey: [...clinicQueryKey, "appointments", filters],
     queryFn: () => clinicApi.appointments(filters),
-    // Keep the current list visible while the next filter result loads
+    
     placeholderData: keepPreviousData,
   });
 }
