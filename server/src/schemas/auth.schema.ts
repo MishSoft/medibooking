@@ -48,8 +48,14 @@ export const doctorRegisterSchema = baseUserSchema.extend({
 });
 
 export const loginSchema = z.object({
-  identifier: z.string().min(1, "Enter your email or license number."),
+  identifier: z
+    .string()
+    .min(1, "Enter your email or National ID Number (Personal Code)"),
   password: z.string().min(1, "Password is required."),
+  personalId: z
+    .string()
+    .regex(/^\d{11}$/, "Personal ID must be 11 digits.")
+    .optional(),
 });
 
 export type PatientRegisterInput = z.infer<typeof patientRegisterSchema>;
