@@ -274,13 +274,13 @@ export class AuthService {
     }
 
     if (!user) {
-      throw new Error("Wrong email/license or password");
+      throw new Error("Wrong email/id or password");
     }
 
     const isPasswordValid = await bcrypt.compare(data.password, user.password);
 
     if (!isPasswordValid) {
-      throw new Error("Wrong email/license or password");
+      throw new Error("Wrong email/id or password");
     }
 
     const token = this.generateToken(user.id, user.role);
