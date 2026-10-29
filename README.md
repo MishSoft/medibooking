@@ -134,7 +134,7 @@ All accounts use the password **`123xyzABC_`**.
 | :--- | :--- | :--- |
 | **Clinic Admin** | Email: `bobclinic@clinic.ge`<br>Tax / MoH ID: `98345908-TMC` | `123xyzABC_` |
 | **Doctor** | Email: `bobdoctor@clinic.ge`<br>Medical License: `GEO-MED-333` | `123xyzABC_` |
-| **Patient** | Email: `bob@clinic.ge` | `123xyzABC_` |
+| **Patient** | Email: `bob@clinic.ge` <br>ID: `44444444444` | `123xyzABC_` |
 
 ---
 
