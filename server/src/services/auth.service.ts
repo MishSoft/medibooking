@@ -243,43 +243,43 @@ export class AuthService {
     let user = null;
 
     if (data.identifier.includes("@")) {
-      const found = await prisma.user.findUnique({
+      user = await prisma.user.findUnique({
         where: { email: data.identifier },
-        include: { patientProfile: true },
       });
-
-      if (found) {
-        if (found.role === Role.PATIENT) {
-          // Patients must provide a matching personal ID as well as the email.
-          if (
-            data.personalId &&
-            found.patientProfile?.personalId === data.personalId
-          ) {
-            user = found;
-          }
-        } else {
-          // Doctors / clinic admins: email + password only.
-          user = found;
-        }
-      }
     } else {
-      const doctorProfile = await prisma.doctorProfile.findUnique({
-        where: { licenseNo: data.identifier },
+      const patientProfile = await prisma.patientProfile.findUnique({
+        where: { personalId: data.identifier },
         include: { user: true },
       });
 
-      if (doctorProfile) {
-        user = doctorProfile.user;
+      if (patientProfile) {
+        user = patientProfile.user;
+      } else {
+        const doctorProfile = await prisma.doctorProfile.findFirst({
+          where: {
+            OR: [
+              { licenseNo: data.identifier },
+              { personalId: data.identifier },
+            ],
+          },
+          include: { user: true },
+        });
+
+        if (doctorProfile) {
+          user = doctorProfile.user;
+        }
       }
     }
 
     if (!user) {
+      console.log("LOGIN: user not found for", data.identifier);
       throw new Error("Wrong email/id or password");
     }
 
     const isPasswordValid = await bcrypt.compare(data.password, user.password);
 
     if (!isPasswordValid) {
+      console.log("LOGIN: wrong password for", user.email);
       throw new Error("Wrong email/id or password");
     }
 

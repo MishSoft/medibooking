@@ -11,7 +11,7 @@ export const baseUserSchema = z.object({
 
 export const patientRegisterSchema = baseUserSchema.extend({
   role: z.literal(Role.PATIENT).default(Role.PATIENT),
-  personalId: z.string().optional(),
+  personalId: z.string().regex(/^\d{11}$/, "Personal ID must be 11 digits."),
   address: z.string().min(1, "Address is required."),
   city: z.string().min(1, "City is required."),
   gender: z.nativeEnum(Gender).default(Gender.MALE),
@@ -52,10 +52,6 @@ export const loginSchema = z.object({
     .string()
     .min(1, "Enter your email or National ID Number (Personal Code)"),
   password: z.string().min(1, "Password is required."),
-  personalId: z
-    .string()
-    .regex(/^\d{11}$/, "Personal ID must be 11 digits.")
-    .optional(),
 });
 
 export type PatientRegisterInput = z.infer<typeof patientRegisterSchema>;
