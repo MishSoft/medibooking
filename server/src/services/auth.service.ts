@@ -246,15 +246,27 @@ export class AuthService {
   static async login(data: LoginInput) {
     const user = await this.findUserForLogin(data.identifier, data.role);
 
-    // Compare against a dummy hash when no user matched, so response time
     // does not reveal whether the account exists
     const isPasswordValid = await bcrypt.compare(
       data.password,
       user?.password ?? DUMMY_PASSWORD_HASH,
     );
 
+    let taxIdValid = true
+
+    if (data.role === Role.CLINIC_ADMIN) {
+      const clinic = user
+        ? await prisma.clinic.findUnique({
+          where: { adminId: user.id },
+          select: {taxId: true}
+        })
+        : null
+
+      taxIdValid = !!clinic && clinic.taxId === data.taxId?.trim()
+    }
+
     // Same error for unknown user, wrong password and wrong sign-in portal
-    if (!user || !isPasswordValid || user.role !== data.role) {
+    if (!user || !isPasswordValid || user.role !== data.role || !taxIdValid) {
       throw new InvalidCredentialsError();
     }
 

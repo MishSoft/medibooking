@@ -47,15 +47,20 @@ export const doctorRegisterSchema = baseUserSchema.extend({
   bio: z.string().optional(),
 });
 
-export const loginSchema = z.object({
-  identifier: z
-    .string()
-    .trim()
-    .min(1, "Enter your email or National ID Number (Personal Code)"),
-  password: z.string().min(1, "Password is required."),
-  // The sign-in form's fixed role; login only succeeds for accounts of this role
-  role: z.nativeEnum(Role, { message: "Sign-in portal is required." }),
-});
+export const loginSchema = z
+  .object({
+    identifier: z
+      .string()
+      .trim()
+      .min(1, "Enter your email or National ID Number (Personal Code)"),
+    password: z.string().min(1, "Password is required."),
+    role: z.nativeEnum(Role, { message: "Sign-in portal is required." }),
+    taxId: z.string().trim().optional(),
+  })
+  .refine((d) => d.role !== Role.CLINIC_ADMIN || !!d.taxId, {
+    message: "Tax ID is required for clinic sign-in.",
+    path: ["taxId"],
+  });
 
 export type PatientRegisterInput = z.infer<typeof patientRegisterSchema>;
 export type ClinicRegisterInput = z.infer<typeof clinicRegisterSchema>;
