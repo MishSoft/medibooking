@@ -13,6 +13,7 @@ const statusMeta = {
   [AppointmentStatus.PENDING]: { label: "Pending", tone: "warning" },
   [AppointmentStatus.COMPLETED]: { label: "Completed", tone: "success" },
   [AppointmentStatus.CANCELLED]: { label: "Cancelled", tone: "error" },
+  [AppointmentStatus.NO_SHOW]: { label: "No-show", tone: "warning" },
 } as const;
 
 function AppointmentStatusBadge({ status }: AppointmentStatusBadgeProps) {

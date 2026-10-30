@@ -37,6 +37,7 @@ export type DoctorWorkload = {
   booked: number; // non-cancelled appointments in range
   completed: number;
   cancelled: number;
+  noShow: number;
   capacity: number; // available slots in range
   utilisation: number; // booked / capacity, 0–1
 };
@@ -46,6 +47,7 @@ export type ClinicStats = {
   completed: number;
   upcoming: number;
   cancelled: number;
+  noShow: number;
   rescheduled: number;
   cancellationRate: number; // 0–1
   utilisation: number; // 0–1, clinic-wide

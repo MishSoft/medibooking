@@ -90,6 +90,13 @@ export const appointmentsApi = {
       body: { status: "COMPLETED", ...record },
     });
   },
+  // Doctor: mark a past scheduled visit as missed by the patient
+  markNoShow: async (id: string) => {
+    await apiRequest<ApiResponse>(`api/appointments/${id}/status`, {
+      method: "PATCH",
+      body: { status: "NO_SHOW" },
+    });
+  },
   // Doctor: edit diagnosis/notes of a completed visit
   updateRecord: async (id: string, record: VisitRecordPayload) => {
     await apiRequest<ApiResponse>(`api/appointments/${id}/record`, {
