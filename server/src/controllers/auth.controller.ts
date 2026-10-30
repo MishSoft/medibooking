@@ -11,6 +11,7 @@ import {
   patientRegisterSchema,
 } from "../schemas/auth.schema";
 import { AuthService } from "../services/auth.service";
+import { InvalidCredentialsError } from "../utils/errors";
 
 const formatZodErrors = (error: ZodError) => {
   return error.issues.map((issue) => ({
@@ -129,6 +130,13 @@ export const loginController = async (
         success: false,
         message: "Validation failed",
         errors: formatZodErrors(error),
+      });
+    }
+
+    if (error instanceof InvalidCredentialsError) {
+      return res.status(401).json({
+        success: false,
+        message: error.message,
       });
     }
 
