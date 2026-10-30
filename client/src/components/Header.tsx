@@ -71,7 +71,7 @@ function Header({ role = "Patient" }: HeaderProps) {
       className="flex min-h-24 w-full items-center justify-between bg-surface-lowest px-5 sm:px-8 lg:px-12"
     >
       <span className="font-inter text-headline-sm font-semibold text-on-surface">
-        MediBooking | One Hub for Patients, Doctors & Clinics
+        MediBooking
       </span>
 
       <div className="flex items-center gap-2">
