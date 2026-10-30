@@ -17,6 +17,7 @@ import { useNavigate } from "react-router";
 import { useLogin } from "../../hooks/useLogin";
 import { notify } from "../../utils/notify";
 import { authStorage } from "../../api/auth.storage";
+import { Role } from "../../types/enums";
 
 type ClinicSignInProps = {
   onRegisterClick: () => void;
@@ -42,7 +43,11 @@ function ClinicSignIn({ onRegisterClick }: ClinicSignInProps) {
     setLoginError("");
     try {
       // facilityId is not accepted by the login endpoint yet
-      const response = await login.mutateAsync({ identifier, password });
+      const response = await login.mutateAsync({
+        identifier,
+        password,
+        role: Role.CLINIC_ADMIN,
+      });
 
       if (!response.data) {
         throw new Error("Login failed.");

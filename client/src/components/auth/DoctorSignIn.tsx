@@ -16,6 +16,7 @@ import { useNavigate } from "react-router";
 import { useLogin } from "../../hooks/useLogin";
 import { notify } from "../../utils/notify";
 import { authStorage } from "../../api/auth.storage";
+import { Role } from "../../types/enums";
 
 const fieldBorder = (hasError: boolean) =>
   hasError ? "border-rose-400/60" : "border-white/5";
@@ -34,7 +35,7 @@ function DoctorSignIn() {
   const onSubmit = async (data: LoginInput) => {
     setLoginError("");
     try {
-      const response = await login.mutateAsync(data);
+      const response = await login.mutateAsync({ ...data, role: Role.DOCTOR });
 
       if (!response.data) {
         throw new Error("Login failed.");

@@ -78,7 +78,8 @@ export function toDoctorRegisterPayload({
   };
 }
 
-export type LoginPayload = LoginInput;
+// Each sign-in form sends its fixed role; the server only signs in accounts of that role
+export type LoginPayload = LoginInput & { role: Role };
 
 export type AuthUser = {
   id: string;
