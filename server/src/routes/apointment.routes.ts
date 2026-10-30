@@ -34,7 +34,7 @@ router.patch(
   cancelAppointment,
 );
 
-// Doctor: complete an appointment and optionally save notes
+// Doctor: complete an appointment (optionally saving notes) or mark it as no-show
 router.patch(
   "/appointments/:id/status",
   authenticate,

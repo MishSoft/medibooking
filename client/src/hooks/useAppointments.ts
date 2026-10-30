@@ -71,6 +71,16 @@ export function useCompleteAppointment() {
   });
 }
 
+export function useMarkNoShow() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => appointmentsApi.markNoShow(id),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: doctorAppointmentsQueryKey }),
+  });
+}
+
 export function useUpdateVisitRecord() {
   const queryClient = useQueryClient();
 

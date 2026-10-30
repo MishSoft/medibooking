@@ -424,6 +424,75 @@ const options: swaggerJsdoc.Options = {
           },
         },
       },
+      "/api/appointments/{id}/status": {
+        patch: {
+          summary: "ვიზიტის დასრულება ან გამოუცხადებლად მონიშვნა (ექიმი)",
+          description:
+            "ექიმი ასრულებს დაგეგმილ ვიზიტს (COMPLETED) ან მონიშნავს მას, როგორც გამოუცხადებელს (NO_SHOW). NO_SHOW შესაძლებელია მხოლოდ ვიზიტის დაწყების დროის შემდეგ და დიაგნოზს არ იღებს.",
+          tags: ["Appointments"],
+          security: [{ BearerAuth: [] }],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              description: "ვიზიტის უნიკალური ID",
+              schema: {
+                type: "string",
+                format: "uuid",
+              },
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["status"],
+                  properties: {
+                    status: {
+                      type: "string",
+                      enum: ["COMPLETED", "NO_SHOW"],
+                    },
+                    notes: {
+                      type: "string",
+                      description: "ვიზიტის შენიშვნები (არასავალდებულო)",
+                    },
+                    diagnosis: {
+                      type: "string",
+                      description:
+                        "დიაგნოზი (არასავალდებულო, მხოლოდ COMPLETED-ისთვის)",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description:
+                "ვიზიტი დასრულდა ან მოინიშნა გამოუცხადებლად",
+            },
+            400: {
+              description: "არასწორი ID, სტატუსი, შენიშვნები ან დიაგნოზი",
+            },
+            401: {
+              description: "მომხმარებელი არაავტორიზებულია",
+            },
+            403: {
+              description: "მხოლოდ ექიმს შეუძლია ვიზიტის განახლება",
+            },
+            404: {
+              description: "ვიზიტი ვერ მოიძებნა",
+            },
+            409: {
+              description:
+                "ვიზიტი არ არის დაგეგმილი, ან NO_SHOW მოთხოვნილია დაწყების დრომდე",
+            },
+          },
+        },
+      },
 
       "/api/auth/register/doctor": {
         post: {

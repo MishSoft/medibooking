@@ -4,6 +4,7 @@ import { PractitionerCalendarIcon } from "../../assets/icons/Icons";
 import {
   useCompleteAppointment,
   useDoctorAppointments,
+  useMarkNoShow,
 } from "../../hooks/useAppointments";
 import type { Appointment } from "../../types/appointment";
 import {
@@ -15,6 +16,8 @@ import {
 import Button from "../../shared/ui/Button";
 import DatePicker from "../../shared/ui/DatePicker";
 import EmptyState from "../../shared/ui/EmptyState";
+import FieldError from "../../shared/ui/FieldError";
+import Modal from "../../shared/ui/Modal";
 import QueryState from "../../shared/ui/QueryState";
 import { notify } from "../../utils/notify";
 import DoctorAppointmentCard from "./DoctorAppointmentCard";
@@ -26,12 +29,14 @@ type AppointmentGroupProps = {
   title: string;
   appointments: Appointment[];
   onComplete: (appointment: Appointment) => void;
+  onNoShow: (appointment: Appointment) => void;
 };
 
 function AppointmentGroup({
   title,
   appointments,
   onComplete,
+  onNoShow,
 }: AppointmentGroupProps) {
   if (appointments.length === 0) return null;
 
@@ -40,15 +45,18 @@ function AppointmentGroup({
       <h3 className="text-label-md tracking-widest text-on-surface-variant">
         {title.toUpperCase()} · {appointments.length}
       </h3>
-      {appointments.map((appointment) => (
-        <DoctorAppointmentCard
-          appointment={appointment}
-          key={appointment.id}
-          onComplete={
-            isAwaitingCompletion(appointment) ? onComplete : undefined
-          }
-        />
-      ))}
+      {appointments.map((appointment) => {
+        const canClose = isAwaitingCompletion(appointment);
+
+        return (
+          <DoctorAppointmentCard
+            appointment={appointment}
+            key={appointment.id}
+            onComplete={canClose ? onComplete : undefined}
+            onNoShow={canClose ? onNoShow : undefined}
+          />
+        );
+      })}
     </section>
   );
 }
@@ -57,7 +65,9 @@ function ScheduleSection() {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [toComplete, setToComplete] = useState<Appointment | null>(null);
   const { data = [], isPending, error } = useDoctorAppointments();
+  const [toNoShow, setToNoShow] = useState<Appointment | null>(null);
   const completeAppointment = useCompleteAppointment();
+  const markNoShow = useMarkNoShow();
 
   const awaitingCompletion = getAwaitingCompletion(data);
   const upcoming = getUpcomingAppointments(data);
@@ -72,6 +82,11 @@ function ScheduleSection() {
   const closeCompleteDialog = () => {
     completeAppointment.reset();
     setToComplete(null);
+  };
+
+  const closeNoShowDialog = () => {
+    markNoShow.reset();
+    setToNoShow(null);
   };
 
   return (
@@ -106,6 +121,7 @@ function ScheduleSection() {
                   <AppointmentGroup
                     appointments={dayAppointments}
                     onComplete={setToComplete}
+                    onNoShow={setToNoShow}
                     title="Appointments"
                   />
                 ) : (
@@ -121,11 +137,13 @@ function ScheduleSection() {
                 <AppointmentGroup
                   appointments={awaitingCompletion}
                   onComplete={setToComplete}
+                  onNoShow={setToNoShow}
                   title="Awaiting completion"
                 />
                 <AppointmentGroup
                   appointments={upcoming}
                   onComplete={setToComplete}
+                  onNoShow={setToNoShow}
                   title="Upcoming"
                 />
               </>
@@ -164,6 +182,48 @@ function ScheduleSection() {
           submitLabel="Complete Visit"
           title="Complete visit"
         />
+      )}
+
+      {toNoShow && (
+        <Modal
+          description={`${getPatientName(toNoShow.patient)} · ${format(new Date(toNoShow.startsAt), "EEE, d MMM yyyy · HH:mm")}`}
+          footer={
+            <>
+              <Button onClick={closeNoShowDialog} variant="secondary">
+                Cancel
+              </Button>
+              <Button
+                disabled={markNoShow.isPending}
+                onClick={() =>
+                  markNoShow.mutate(toNoShow.id, {
+                    onSuccess: () => {
+                      notify.success(
+                        "Marked as no-show",
+                        `${getPatientName(toNoShow.patient)} missed this visit.`,
+                      );
+                      setToNoShow(null);
+                    },
+                  })
+                }
+              >
+                {markNoShow.isPending ? "Saving…" : "Mark as No-Show"}
+              </Button>
+            </>
+          }
+          onClose={closeNoShowDialog}
+          open
+          title="Mark as no-show?"
+        >
+          <div className="space-y-4">
+            <p className="text-body-md text-on-surface-variant">
+              The patient didn't attend this visit. This can't be undone.
+            </p>
+            <FieldError
+              id="no-show-error"
+              message={markNoShow.error?.message}
+            />
+          </div>
+        </Modal>
       )}
     </QueryState>
   );

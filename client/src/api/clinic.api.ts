@@ -76,6 +76,7 @@ export const toClinicStats = (dto: ClinicStatsDto): ClinicStats => ({
   completed: dto.completed,
   upcoming: dto.upcoming,
   cancelled: dto.cancelled,
+  noShow: dto.noShow,
   rescheduled: dto.rescheduled,
   cancellationRate: dto.cancellationRate,
   utilisation: dto.utilisation,

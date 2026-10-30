@@ -30,6 +30,9 @@ function WorkloadTable({ workload }: WorkloadTableProps) {
               CANCELLED
             </th>
             <th className="px-4 py-3 text-right font-normal" scope="col">
+              NO-SHOW
+            </th>
+            <th className="px-4 py-3 text-right font-normal" scope="col">
               CAPACITY
             </th>
             <th className="w-1/4 px-4 py-3 font-normal" scope="col">
@@ -39,7 +42,15 @@ function WorkloadTable({ workload }: WorkloadTableProps) {
         </thead>
         <tbody>
           {ranked.map(
-            ({ doctor, booked, completed, cancelled, capacity, utilisation }) => (
+            ({
+              doctor,
+              booked,
+              completed,
+              cancelled,
+              noShow,
+              capacity,
+              utilisation,
+            }) => (
               <tr
                 className="border-t border-surface-highest transition-colors hover:bg-surface-container-high"
                 key={doctor.id}
@@ -68,6 +79,9 @@ function WorkloadTable({ workload }: WorkloadTableProps) {
                 </td>
                 <td className="px-4 py-3 text-right font-code text-code-sm">
                   {cancelled}
+                </td>
+                <td className="px-4 py-3 text-right font-code text-code-sm">
+                  {noShow}
                 </td>
                 <td className="px-4 py-3 text-right font-code text-code-sm">
                   {capacity}
