@@ -30,6 +30,7 @@ enum AppointmentStatus {
   COMPLETED
   CANCELLED
   PENDING
+  NO_SHOW
 }
 
 model User {
