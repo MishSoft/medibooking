@@ -106,6 +106,11 @@ export type CancelAppointmentPayload = {
   reason?: string;
 };
 
+export type RecordOutcomePayload = {
+  id: string;
+  status: "COMPLETED" | "NO_SHOW";
+};
+
 export type UpdateDoctorSchedulePayload = {
   doctorId: string;
   schedule: DoctorSchedule;
@@ -159,6 +164,18 @@ export const clinicApi = {
       { method: "PATCH", body: { reason } },
     );
     if (!response.data) throw new Error("Cancellation failed.");
+    return toClinicAppointment(response.data);
+  },
+  // Past open appointments only; 409 otherwise
+  recordOutcome: async ({
+    id,
+    status,
+  }: RecordOutcomePayload): Promise<ClinicAppointment> => {
+    const response = await apiRequest<ApiResponse<ClinicAppointmentDto>>(
+      `api/clinic/appointments/${id}/outcome`,
+      { method: "PATCH", body: { status } },
+    );
+    if (!response.data) throw new Error("Could not record the outcome.");
     return toClinicAppointment(response.data);
   },
   updateSchedule: async ({

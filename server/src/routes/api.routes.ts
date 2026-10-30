@@ -7,6 +7,7 @@ import {
   getClinicAppointments,
   rescheduleClinicAppointment,
   cancelClinicAppointment,
+  recordClinicAppointmentOutcome,
   getClinicStats,
 } from "../controllers/clinic.controller";
 import { authenticate, authorize } from "../middleware/auth.middleware";
@@ -54,6 +55,14 @@ router.patch(
   authenticate,
   authorize("CLINIC_ADMIN"),
   cancelClinicAppointment,
+);
+
+// Clinic admin: mark a past appointment as completed or no-show
+router.patch(
+  "/clinic/appointments/:id/outcome",
+  authenticate,
+  authorize("CLINIC_ADMIN"),
+  recordClinicAppointmentOutcome,
 );
 
 router.get(

@@ -772,6 +772,132 @@ export const cancelClinicAppointment = async (req: Request, res: Response) => {
   }
 };
 
+export const recordClinicAppointmentOutcome = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authorization is required.",
+      });
+    }
+
+    const params = paramsSchema.safeParse(req.params);
+
+    if (!params.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid appointment ID.",
+        error: params.error.format(),
+      });
+    }
+
+    const bodySchema = z.object({
+      status: z.enum(["COMPLETED", "NO_SHOW"]),
+    });
+
+    const body = bodySchema.safeParse(req.body);
+
+    if (!body.success) {
+      return res.status(400).json({
+        success: false,
+        message: "status must be COMPLETED or NO_SHOW.",
+        error: body.error.format(),
+      });
+    }
+
+    const { id } = params.data;
+    const { status } = body.data;
+
+    const clinic = await prisma.clinic.findUnique({
+      where: { adminId: userId },
+      select: { id: true },
+    });
+
+    if (!clinic) {
+      return res.status(404).json({
+        success: false,
+        message: "Clinic not found.",
+      });
+    }
+
+    const appointment = await prisma.appointment.findFirst({
+      where: { id, doctor: { clinicId: clinic.id } },
+      select: {
+        id: true,
+        status: true,
+        startAt: true,
+      },
+    });
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Appointment not found in this clinic.",
+      });
+    }
+
+    if (appointment.status !== "SCHEDULED" && appointment.status !== "PENDING") {
+      return res.status(409).json({
+        success: false,
+        message: "An outcome can only be recorded for open appointments.",
+      });
+    }
+
+    if (appointment.startAt > new Date()) {
+      return res.status(409).json({
+        success: false,
+        message: "Outcomes can only be recorded after the appointment starts.",
+      });
+    }
+
+    // Status guard in the where clause prevents racing a concurrent change
+    const result = await prisma.appointment.updateMany({
+      where: {
+        id: appointment.id,
+        doctor: { clinicId: clinic.id },
+        status: { in: ["SCHEDULED", "PENDING"] },
+      },
+      data: { status },
+    });
+
+    if (result.count === 0) {
+      return res.status(409).json({
+        success: false,
+        message: "Appointment outcome can no longer be recorded.",
+      });
+    }
+
+    const updatedAppointment = await prisma.appointment.findUnique({
+      where: { id: appointment.id },
+      select: clinicAppointmentSelect,
+    });
+
+    if (!updatedAppointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Appointment not found after update.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Appointment outcome recorded successfully.",
+      data: updatedAppointment,
+    });
+  } catch (error) {
+    console.error("Error recording clinic appointment outcome:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+    });
+  }
+};
+
 export const getClinicStats = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;

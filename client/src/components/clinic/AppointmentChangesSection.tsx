@@ -4,7 +4,10 @@ import { ClockHistoryIcon } from "../../assets/icons/Icons";
 import {
   useClinicAppointments,
   useClinicDoctors,
+  useRecordAppointmentOutcome,
 } from "../../hooks/useClinic";
+import type { RecordOutcomePayload } from "../../api/clinic.api";
+import { notify } from "../../utils/notify";
 import { AppointmentStatus } from "../../types/appointment";
 import type {
   ClinicAppointment,
@@ -20,7 +23,7 @@ import CancelAppointmentModal from "./CancelAppointmentModal";
 import ClinicAppointmentCard from "./ClinicAppointmentCard";
 import RescheduleModal from "./RescheduleModal";
 
-type ChangeView = "cancelled" | "rescheduled" | "active";
+type ChangeView = "cancelled" | "rescheduled" | "open" | "noShow";
 type Period = "upcoming" | "past" | "all";
 
 const PAGE_SIZE = 20;
@@ -29,15 +32,18 @@ const viewFilters: Record<ChangeView, (apt: ClinicAppointment) => boolean> = {
   cancelled: (apt) => apt.status === AppointmentStatus.CANCELLED,
   rescheduled: (apt) =>
     !!apt.rescheduledFrom && apt.status !== AppointmentStatus.CANCELLED,
-  active: (apt) =>
+  // Not cancelled and no outcome recorded yet
+  open: (apt) =>
     apt.status === AppointmentStatus.SCHEDULED ||
     apt.status === AppointmentStatus.PENDING,
+  noShow: (apt) => apt.status === AppointmentStatus.NO_SHOW,
 };
 
 const emptyMessages: Record<ChangeView, string> = {
   cancelled: "No cancelled appointments for these filters.",
   rescheduled: "No rescheduled appointments for these filters.",
-  active: "No active appointments for these filters.",
+  open: "No open appointments for these filters.",
+  noShow: "No missed appointments for these filters.",
 };
 
 const periodOptions = [
@@ -60,7 +66,7 @@ const getPeriodRange = (period: Period) => {
 
 function AppointmentChangesSection() {
   const [view, setView] = useState<ChangeView>("cancelled");
-  const [period, setPeriod] = useState<Period>("all");
+  const [period, setPeriod] = useState<Period>("upcoming");
   const [doctorId, setDoctorId] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [rescheduling, setRescheduling] = useState<ClinicAppointment | null>(
@@ -80,11 +86,13 @@ function AppointmentChangesSection() {
     isPlaceholderData,
     error,
   } = useClinicAppointments(filters);
+  const outcomeMutation = useRecordAppointmentOutcome();
 
   const counts = {
     cancelled: appointments.filter(viewFilters.cancelled).length,
     rescheduled: appointments.filter(viewFilters.rescheduled).length,
-    active: appointments.filter(viewFilters.active).length,
+    open: appointments.filter(viewFilters.open).length,
+    noShow: appointments.filter(viewFilters.noShow).length,
   };
   const listed = appointments.filter(viewFilters[view]);
   const visible = listed.slice(0, visibleCount);
@@ -97,9 +105,50 @@ function AppointmentChangesSection() {
       setVisibleCount(PAGE_SIZE);
     };
 
+  const recordOutcome = (
+    appointment: ClinicAppointment,
+    status: RecordOutcomePayload["status"],
+  ) =>
+    outcomeMutation.mutate(
+      { id: appointment.id, status },
+      {
+        onSuccess: () =>
+          notify.success(
+            status === "COMPLETED" ? "Marked as completed" : "Marked as no-show",
+            `${appointment.patient.firstName} ${appointment.patient.lastName}`,
+          ),
+        onError: (mutationError) => notify.error(mutationError),
+      },
+    );
+
   const renderActions = (appointment: ClinicAppointment) => {
-    // Past appointments are history only
-    if (new Date(appointment.startsAt) <= new Date()) return undefined;
+    if (new Date(appointment.startsAt) <= new Date()) {
+      // Past open appointments still need an outcome; the rest are history
+      if (!viewFilters.open(appointment)) return undefined;
+
+      const isSaving =
+        outcomeMutation.isPending &&
+        outcomeMutation.variables?.id === appointment.id;
+
+      return (
+        <>
+          <Button
+            disabled={isSaving}
+            onClick={() => recordOutcome(appointment, "COMPLETED")}
+            variant="secondary"
+          >
+            Mark completed
+          </Button>
+          <Button
+            disabled={isSaving}
+            onClick={() => recordOutcome(appointment, "NO_SHOW")}
+            variant="secondary"
+          >
+            No-show
+          </Button>
+        </>
+      );
+    }
 
     if (appointment.status === AppointmentStatus.CANCELLED) {
       return (
@@ -134,7 +183,8 @@ function AppointmentChangesSection() {
               label: "Rescheduled",
               count: counts.rescheduled,
             },
-            { value: "active", label: "Active", count: counts.active },
+            { value: "open", label: "Open", count: counts.open },
+            { value: "noShow", label: "No-show", count: counts.noShow },
           ]}
           value={view}
         />

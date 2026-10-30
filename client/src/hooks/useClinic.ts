@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import {
   clinicApi,
   type CancelAppointmentPayload,
+  type RecordOutcomePayload,
   type RescheduleAppointmentPayload,
   type UpdateDoctorSchedulePayload,
 } from "../api/clinic.api";
@@ -72,6 +73,11 @@ export const useRescheduleAppointment = () =>
 export const useCancelClinicAppointment = () =>
   useClinicMutation((payload: CancelAppointmentPayload) =>
     clinicApi.cancel(payload),
+  );
+
+export const useRecordAppointmentOutcome = () =>
+  useClinicMutation((payload: RecordOutcomePayload) =>
+    clinicApi.recordOutcome(payload),
   );
 
 export const useUpdateDoctorSchedule = () =>
