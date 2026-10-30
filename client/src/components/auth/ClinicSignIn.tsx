@@ -39,14 +39,14 @@ function ClinicSignIn({ onRegisterClick }: ClinicSignInProps) {
     resolver: zodResolver(clinicSignInSchema),
   });
 
-  const onSubmit = async ({ identifier, password }: ClinicSignInInput) => {
+  const onSubmit = async ({ identifier, password, facilityId }: ClinicSignInInput) => {
     setLoginError("");
     try {
-      // facilityId is not accepted by the login endpoint yet
       const response = await login.mutateAsync({
         identifier,
         password,
         role: Role.CLINIC_ADMIN,
+        taxId: facilityId,
       });
 
       if (!response.data) {

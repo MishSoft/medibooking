@@ -49,8 +49,11 @@ export const doctorRegisterSchema = baseUserSchema.extend({
 });
 
 export const loginSchema = z.object({
-  identifier: z.string().min(1, "Enter your email or National ID Number (Personal Code)"),
+  identifier: z
+    .string()
+    .min(1, "Enter your email or National ID Number (Personal Code)"),
   password: z.string().min(1, "Password is required"),
+  taxId: z.string().trim().optional(),
 });
 
 export type PatientRegisterInput = z.infer<typeof patientRegisterSchema>;

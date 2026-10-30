@@ -8,6 +8,7 @@ export const doctorSignInSchema = loginSchema;
 export const clinicSignInSchema = loginSchema.extend({
   identifier: z.string().email("Invalid email format"),
   facilityId: z.string().min(1, "Clinic facility ID is required"),
+  
 });
 
 export type ClinicSignInInput = z.infer<typeof clinicSignInSchema>;
