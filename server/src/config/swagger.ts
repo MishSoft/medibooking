@@ -37,16 +37,24 @@ const options: swaggerJsdoc.Options = {
               "application/json": {
                 schema: {
                   type: "object",
-                  required: ["identifier", "password"],
+                  required: ["identifier", "password", "role"],
                   properties: {
                     identifier: {
                       type: "string",
                       example: "patient@example.com",
-                      description: "ელ.ფოსტა ან ექიმის ლიცენზიის ნომერი",
+                      description:
+                        "ელ.ფოსტა (ყველა როლი); პაციენტი — პირადი ნომერი; ექიმი — პირადი ნომერი ან ლიცენზიის ნომერი",
                     },
                     password: {
                       type: "string",
                       example: "password123",
+                    },
+                    role: {
+                      type: "string",
+                      enum: ["PATIENT", "DOCTOR", "CLINIC_ADMIN"],
+                      example: "PATIENT",
+                      description:
+                        "ავტორიზაციის ფორმის როლი; შესვლა მხოლოდ ამ როლის ანგარიშით არის შესაძლებელი",
                     },
                   },
                 },
@@ -58,7 +66,11 @@ const options: swaggerJsdoc.Options = {
               description: "წარმატებული ავტორიზაცია (აბრუნებს token-ს)",
             },
             400: {
-              description: "არასწორი მონაცემები",
+              description: "ვალიდაციის შეცდომა (მაგ. role აკლია ან არასწორია)",
+            },
+            401: {
+              description:
+                "არასწორი ელ.ფოსტა/ID ან პაროლი, ან ანგარიში სხვა როლს ეკუთვნის",
             },
           },
         },

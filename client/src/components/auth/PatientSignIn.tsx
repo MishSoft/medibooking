@@ -15,6 +15,7 @@ import { useNavigate } from "react-router";
 import { useLogin } from "../../hooks/useLogin";
 import { notify } from "../../utils/notify";
 import { authStorage } from "../../api/auth.storage";
+import { Role } from "../../types/enums";
 
 type PatientSignInProps = {
   onRegisterClick: () => void;
@@ -37,7 +38,7 @@ function PatientSignIn({ onRegisterClick }: PatientSignInProps) {
   const onSubmit = async (data: LoginInput) => {
     setLoginError("");
     try {
-      const response = await login.mutateAsync(data);
+      const response = await login.mutateAsync({ ...data, role: Role.PATIENT });
 
       if (!response.data) {
         throw new Error("Login failed.");
