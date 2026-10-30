@@ -828,6 +828,55 @@ const options: swaggerJsdoc.Options = {
         },
       },
 
+      "/api/clinic/appointments/{id}/outcome": {
+        patch: {
+          summary: "კლინიკის ვიზიტის შედეგის დაფიქსირება",
+          description:
+            "წარსული ღია ვიზიტის (SCHEDULED ან PENDING) მონიშვნა დასრულებულად (COMPLETED) ან გამოუცხადებლად (NO_SHOW). შესაძლებელია მხოლოდ ვიზიტის დაწყების დროის შემდეგ.",
+          tags: ["Clinic Dashboard"],
+          security: [{ BearerAuth: [] }],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              description: "ვიზიტის უნიკალური ID",
+              schema: { type: "string", format: "uuid" },
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["status"],
+                  properties: {
+                    status: {
+                      type: "string",
+                      enum: ["COMPLETED", "NO_SHOW"],
+                      example: "COMPLETED",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: "ვიზიტის შედეგი წარმატებით დაფიქსირდა" },
+            400: { description: "არასწორი ID ან სტატუსი" },
+            401: { description: "არაავტორიზებული" },
+            403: { description: "წვდომა აკრძალულია" },
+            404: { description: "ვიზიტი ვერ მოიძებნა" },
+            409: {
+              description:
+                "ვიზიტი არ არის ღია, ან ჯერ არ დაწყებულა",
+            },
+            500: { description: "სერვერის შიდა შეცდომა" },
+          },
+        },
+      },
+
       "/api/clinic/stats": {
         get: {
           summary: "კლინიკის სტატისტიკა არჩეული პერიოდის მიხედვით",
