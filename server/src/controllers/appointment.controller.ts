@@ -271,6 +271,13 @@ export const cancelAppointment = async (req: Request, res: Response) => {
       });
     }
 
+    if (appointment.status === "NO_SHOW") {
+      return res.status(409).json({
+        success: false,
+        message: "Missed appointments cannot be cancelled.",
+      });
+    }
+
     if (appointment.startAt <= new Date()) {
       return res.status(400).json({
         success: false,
@@ -348,6 +355,7 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
       "COMPLETED",
       "CANCELLED",
       "PENDING",
+      "NO_SHOW",
     ] as const;
 
     if (

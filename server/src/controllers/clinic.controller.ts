@@ -532,6 +532,13 @@ export const rescheduleClinicAppointment = async (
       });
     }
 
+    if (appointment.status === "NO_SHOW") {
+      return res.status(409).json({
+        success: false,
+        message: "Missed appointments cannot be rescheduled.",
+      });
+    }
+
     if (!appointment.doctor.schedule) {
       return res.status(409).json({
         success: false,
@@ -705,6 +712,13 @@ export const cancelClinicAppointment = async (req: Request, res: Response) => {
       });
     }
 
+    if (appointment.status === "NO_SHOW") {
+      return res.status(409).json({
+        success: false,
+        message: "Missed appointments cannot be cancelled.",
+      });
+    }
+
     if (appointment.startAt <= new Date()) {
       return res.status(409).json({
         success: false,
@@ -868,6 +882,7 @@ export const getClinicStats = async (req: Request, res: Response) => {
       booked: number;
       completed: number;
       cancelled: number;
+      noShow: number;
     };
 
     const countsByDoctor = new Map<string, DoctorCounts>();
@@ -877,6 +892,7 @@ export const getClinicStats = async (req: Request, res: Response) => {
         booked: 0,
         completed: 0,
         cancelled: 0,
+        noShow: 0,
       });
     }
 
@@ -885,6 +901,7 @@ export const getClinicStats = async (req: Request, res: Response) => {
     let cancelled = 0;
     let pending = 0;
     let scheduled = 0;
+    let noShow = 0;
 
     for (const row of groupedAppointments) {
       const count = row._count._all;
@@ -894,6 +911,7 @@ export const getClinicStats = async (req: Request, res: Response) => {
       else if (row.status === "CANCELLED") cancelled += count;
       else if (row.status === "PENDING") pending += count;
       else if (row.status === "SCHEDULED") scheduled += count;
+      else if (row.status === "NO_SHOW") noShow += count;
 
       const doctorCounts = countsByDoctor.get(row.doctorId);
       if (!doctorCounts) continue;
@@ -906,6 +924,8 @@ export const getClinicStats = async (req: Request, res: Response) => {
 
       if (row.status === "COMPLETED") {
         doctorCounts.completed += count;
+      } else if (row.status === "NO_SHOW") {
+        doctorCounts.noShow += count;
       }
     }
 
@@ -931,6 +951,7 @@ export const getClinicStats = async (req: Request, res: Response) => {
         booked: counts.booked,
         completed: counts.completed,
         cancelled: counts.cancelled,
+        noShow: counts.noShow,
         capacity,
         utilisation: capacity > 0 ? counts.booked / capacity : 0,
       };
@@ -949,6 +970,7 @@ export const getClinicStats = async (req: Request, res: Response) => {
         completed,
         upcoming,
         cancelled,
+        noShow,
         rescheduled,
         cancellationRate: total > 0 ? cancelled / total : 0,
         utilisation: totalCapacity > 0 ? totalBooked / totalCapacity : 0,
@@ -960,6 +982,7 @@ export const getClinicStats = async (req: Request, res: Response) => {
           scheduled,
           completed,
           cancelled,
+          noShow,
         },
       },
     });
