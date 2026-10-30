@@ -41,8 +41,10 @@ export async function apiRequest<TResponse>(
 
   const data = await response.json().catch(() => null);
 
-  // Expired or invalid session — drop it and send the user back to sign in
-  if (response.status === 401 && token) {
+  // Expired or invalid session — drop it and send the user back to sign in.
+  // A 401 from login itself means wrong credentials; the form shows it instead
+  const isLoginRequest = url.pathname.endsWith("/api/auth/login");
+  if (response.status === 401 && token && !isLoginRequest) {
     authStorage.clear();
     window.location.assign(SIGN_IN_PATH);
   }

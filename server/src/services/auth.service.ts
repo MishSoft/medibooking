@@ -9,8 +9,12 @@ import {
   PatientRegisterInput,
 } from "../schemas/auth.schema";
 import { Request, Response } from "express";
+import { InvalidCredentialsError } from "../utils/errors";
 
 const JWT_SECRET = process.env.JWT_SECRET;
+
+// Compared against when no user matches, to keep login timing uniform
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync("dummy-password", 10);
 
 if (!JWT_SECRET) {
   throw new Error("JWT_SECRET environment variable is missing.");
@@ -240,47 +244,18 @@ export class AuthService {
   }
 
   static async login(data: LoginInput) {
-    let user = null;
+    const user = await this.findUserForLogin(data.identifier, data.role);
 
-    if (data.identifier.includes("@")) {
-      user = await prisma.user.findUnique({
-        where: { email: data.identifier },
-      });
-    } else {
-      const patientProfile = await prisma.patientProfile.findUnique({
-        where: { personalId: data.identifier },
-        include: { user: true },
-      });
+    // Compare against a dummy hash when no user matched, so response time
+    // does not reveal whether the account exists
+    const isPasswordValid = await bcrypt.compare(
+      data.password,
+      user?.password ?? DUMMY_PASSWORD_HASH,
+    );
 
-      if (patientProfile) {
-        user = patientProfile.user;
-      } else {
-        const doctorProfile = await prisma.doctorProfile.findFirst({
-          where: {
-            OR: [
-              { licenseNo: data.identifier },
-              { personalId: data.identifier },
-            ],
-          },
-          include: { user: true },
-        });
-
-        if (doctorProfile) {
-          user = doctorProfile.user;
-        }
-      }
-    }
-
-    if (!user) {
-      console.log("LOGIN: user not found for", data.identifier);
-      throw new Error("Wrong email/id or password");
-    }
-
-    const isPasswordValid = await bcrypt.compare(data.password, user.password);
-
-    if (!isPasswordValid) {
-      console.log("LOGIN: wrong password for", user.email);
-      throw new Error("Wrong email/id or password");
+    // Same error for unknown user, wrong password and wrong sign-in portal
+    if (!user || !isPasswordValid || user.role !== data.role) {
+      throw new InvalidCredentialsError();
     }
 
     const token = this.generateToken(user.id, user.role);
@@ -295,6 +270,43 @@ export class AuthService {
       },
       token,
     };
+  }
+
+  // Looks up only among accounts of the given role, so each sign-in form
+  // can never resolve to another role's account
+  private static async findUserForLogin(identifier: string, role: Role) {
+    if (identifier.includes("@")) {
+      return prisma.user.findFirst({
+        where: { email: { equals: identifier, mode: "insensitive" }, role },
+      });
+    }
+
+    switch (role) {
+      case Role.PATIENT: {
+        const patientProfile = await prisma.patientProfile.findUnique({
+          where: { personalId: identifier },
+          include: { user: true },
+        });
+        return patientProfile?.user ?? null;
+      }
+      case Role.DOCTOR: {
+        // Personal ID first, then license number, so the match is deterministic
+        const byPersonalId = await prisma.doctorProfile.findUnique({
+          where: { personalId: identifier },
+          include: { user: true },
+        });
+        if (byPersonalId) return byPersonalId.user;
+
+        const byLicenseNo = await prisma.doctorProfile.findUnique({
+          where: { licenseNo: identifier },
+          include: { user: true },
+        });
+        return byLicenseNo?.user ?? null;
+      }
+      default:
+        // Clinic admins have no personal ID; they sign in by email only
+        return null;
+    }
   }
 
   private static generateToken(userId: string, role: Role) {
