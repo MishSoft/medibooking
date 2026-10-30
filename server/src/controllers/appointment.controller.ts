@@ -271,6 +271,13 @@ export const cancelAppointment = async (req: Request, res: Response) => {
       });
     }
 
+    if (appointment.status === "NO_SHOW") {
+      return res.status(409).json({
+        success: false,
+        message: "Missed appointments cannot be cancelled.",
+      });
+    }
+
     if (appointment.startAt <= new Date()) {
       return res.status(400).json({
         success: false,
@@ -348,6 +355,7 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
       "COMPLETED",
       "CANCELLED",
       "PENDING",
+      "NO_SHOW",
     ] as const;
 
     if (
@@ -430,7 +438,7 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
   }
 };
 
-// Complete appointment (doctor)
+// Complete appointment or mark it as no-show (doctor)
 export const updateAppointmentStatus = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
@@ -456,9 +464,10 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
     const { status, notes, diagnosis } = req.body;
 
     if (
-      status !== "COMPLETED" ||
+      (status !== "COMPLETED" && status !== "NO_SHOW") ||
       (notes !== undefined && typeof notes !== "string") ||
-      (diagnosis !== undefined && typeof diagnosis !== "string")
+      (diagnosis !== undefined && typeof diagnosis !== "string") ||
+      (status === "NO_SHOW" && diagnosis !== undefined)
     ) {
       return res.status(400).json({
         success: false,
@@ -486,6 +495,7 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
       select: {
         id: true,
         status: true,
+        startAt: true,
       },
     });
 
@@ -499,14 +509,24 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
     if (appointment.status !== "SCHEDULED") {
       return res.status(409).json({
         success: false,
-        message: "Only scheduled appointments can be completed.",
+        message:
+          status === "NO_SHOW"
+            ? "Only scheduled appointments can be marked as no-show."
+            : "Only scheduled appointments can be completed.",
+      });
+    }
+
+    if (status === "NO_SHOW" && appointment.startAt > new Date()) {
+      return res.status(409).json({
+        success: false,
+        message: "An appointment can't be marked as no-show before its start time.",
       });
     }
 
     const updatedAppointment = await prisma.appointment.update({
       where: { id: appointment.id },
       data: {
-        status: "COMPLETED",
+        status,
         ...(notes !== undefined ? { notes: notes.trim() || null } : {}),
         ...(diagnosis !== undefined
           ? { diagnosis: diagnosis.trim() || null }
@@ -522,7 +542,10 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      message: "Appointment completed successfully.",
+      message:
+        status === "NO_SHOW"
+          ? "Appointment marked as no-show."
+          : "Appointment completed successfully.",
       data: updatedAppointment,
     });
   } catch (error: unknown) {

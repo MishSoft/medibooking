@@ -76,6 +76,7 @@ export const toClinicStats = (dto: ClinicStatsDto): ClinicStats => ({
   completed: dto.completed,
   upcoming: dto.upcoming,
   cancelled: dto.cancelled,
+  noShow: dto.noShow,
   rescheduled: dto.rescheduled,
   cancellationRate: dto.cancellationRate,
   utilisation: dto.utilisation,
@@ -103,6 +104,11 @@ export type RescheduleAppointmentPayload = {
 export type CancelAppointmentPayload = {
   id: string;
   reason?: string;
+};
+
+export type RecordOutcomePayload = {
+  id: string;
+  status: "COMPLETED" | "NO_SHOW";
 };
 
 export type UpdateDoctorSchedulePayload = {
@@ -158,6 +164,18 @@ export const clinicApi = {
       { method: "PATCH", body: { reason } },
     );
     if (!response.data) throw new Error("Cancellation failed.");
+    return toClinicAppointment(response.data);
+  },
+  // Past open appointments only; 409 otherwise
+  recordOutcome: async ({
+    id,
+    status,
+  }: RecordOutcomePayload): Promise<ClinicAppointment> => {
+    const response = await apiRequest<ApiResponse<ClinicAppointmentDto>>(
+      `api/clinic/appointments/${id}/outcome`,
+      { method: "PATCH", body: { status } },
+    );
+    if (!response.data) throw new Error("Could not record the outcome.");
     return toClinicAppointment(response.data);
   },
   updateSchedule: async ({

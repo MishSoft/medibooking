@@ -7,11 +7,13 @@ import { getPatientName } from "./PatientVisitCard";
 type DoctorAppointmentCardProps = {
   appointment: Appointment;
   onComplete?: (appointment: Appointment) => void;
+  onNoShow?: (appointment: Appointment) => void;
 };
 
 function DoctorAppointmentCard({
   appointment,
   onComplete,
+  onNoShow,
 }: DoctorAppointmentCardProps) {
   const { patient, status, notes, diagnosis } = appointment;
   const startsAt = new Date(appointment.startsAt);
@@ -49,14 +51,19 @@ function DoctorAppointmentCard({
         </div>
       </div>
 
-      {onComplete && (
-        <Button
-          className="sm:self-center"
-          onClick={() => onComplete(appointment)}
-          variant="secondary"
-        >
-          Complete
-        </Button>
+      {(onComplete || onNoShow) && (
+        <div className="flex gap-2 sm:self-center">
+          {onNoShow && (
+            <Button onClick={() => onNoShow(appointment)} variant="secondary">
+              No-Show
+            </Button>
+          )}
+          {onComplete && (
+            <Button onClick={() => onComplete(appointment)} variant="secondary">
+              Complete
+            </Button>
+          )}
+        </div>
       )}
     </article>
   );

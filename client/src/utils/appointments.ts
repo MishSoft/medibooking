@@ -38,7 +38,8 @@ export const getVisitHistory = (appointments: Appointment[]) =>
     .filter(
       (item) =>
         item.status === AppointmentStatus.COMPLETED ||
-        item.status === AppointmentStatus.CANCELLED,
+        item.status === AppointmentStatus.CANCELLED ||
+        item.status === AppointmentStatus.NO_SHOW,
     )
     .sort((a, b) => byStartAsc(b, a));
 

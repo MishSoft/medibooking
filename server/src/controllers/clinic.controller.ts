@@ -532,6 +532,13 @@ export const rescheduleClinicAppointment = async (
       });
     }
 
+    if (appointment.status === "NO_SHOW") {
+      return res.status(409).json({
+        success: false,
+        message: "Missed appointments cannot be rescheduled.",
+      });
+    }
+
     if (!appointment.doctor.schedule) {
       return res.status(409).json({
         success: false,
@@ -705,6 +712,13 @@ export const cancelClinicAppointment = async (req: Request, res: Response) => {
       });
     }
 
+    if (appointment.status === "NO_SHOW") {
+      return res.status(409).json({
+        success: false,
+        message: "Missed appointments cannot be cancelled.",
+      });
+    }
+
     if (appointment.startAt <= new Date()) {
       return res.status(409).json({
         success: false,
@@ -751,6 +765,132 @@ export const cancelClinicAppointment = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error cancelling clinic appointment:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+    });
+  }
+};
+
+export const recordClinicAppointmentOutcome = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authorization is required.",
+      });
+    }
+
+    const params = paramsSchema.safeParse(req.params);
+
+    if (!params.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid appointment ID.",
+        error: params.error.format(),
+      });
+    }
+
+    const bodySchema = z.object({
+      status: z.enum(["COMPLETED", "NO_SHOW"]),
+    });
+
+    const body = bodySchema.safeParse(req.body);
+
+    if (!body.success) {
+      return res.status(400).json({
+        success: false,
+        message: "status must be COMPLETED or NO_SHOW.",
+        error: body.error.format(),
+      });
+    }
+
+    const { id } = params.data;
+    const { status } = body.data;
+
+    const clinic = await prisma.clinic.findUnique({
+      where: { adminId: userId },
+      select: { id: true },
+    });
+
+    if (!clinic) {
+      return res.status(404).json({
+        success: false,
+        message: "Clinic not found.",
+      });
+    }
+
+    const appointment = await prisma.appointment.findFirst({
+      where: { id, doctor: { clinicId: clinic.id } },
+      select: {
+        id: true,
+        status: true,
+        startAt: true,
+      },
+    });
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Appointment not found in this clinic.",
+      });
+    }
+
+    if (appointment.status !== "SCHEDULED" && appointment.status !== "PENDING") {
+      return res.status(409).json({
+        success: false,
+        message: "An outcome can only be recorded for open appointments.",
+      });
+    }
+
+    if (appointment.startAt > new Date()) {
+      return res.status(409).json({
+        success: false,
+        message: "Outcomes can only be recorded after the appointment starts.",
+      });
+    }
+
+    // Status guard in the where clause prevents racing a concurrent change
+    const result = await prisma.appointment.updateMany({
+      where: {
+        id: appointment.id,
+        doctor: { clinicId: clinic.id },
+        status: { in: ["SCHEDULED", "PENDING"] },
+      },
+      data: { status },
+    });
+
+    if (result.count === 0) {
+      return res.status(409).json({
+        success: false,
+        message: "Appointment outcome can no longer be recorded.",
+      });
+    }
+
+    const updatedAppointment = await prisma.appointment.findUnique({
+      where: { id: appointment.id },
+      select: clinicAppointmentSelect,
+    });
+
+    if (!updatedAppointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Appointment not found after update.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Appointment outcome recorded successfully.",
+      data: updatedAppointment,
+    });
+  } catch (error) {
+    console.error("Error recording clinic appointment outcome:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error.",
@@ -868,6 +1008,7 @@ export const getClinicStats = async (req: Request, res: Response) => {
       booked: number;
       completed: number;
       cancelled: number;
+      noShow: number;
     };
 
     const countsByDoctor = new Map<string, DoctorCounts>();
@@ -877,6 +1018,7 @@ export const getClinicStats = async (req: Request, res: Response) => {
         booked: 0,
         completed: 0,
         cancelled: 0,
+        noShow: 0,
       });
     }
 
@@ -885,6 +1027,7 @@ export const getClinicStats = async (req: Request, res: Response) => {
     let cancelled = 0;
     let pending = 0;
     let scheduled = 0;
+    let noShow = 0;
 
     for (const row of groupedAppointments) {
       const count = row._count._all;
@@ -894,6 +1037,7 @@ export const getClinicStats = async (req: Request, res: Response) => {
       else if (row.status === "CANCELLED") cancelled += count;
       else if (row.status === "PENDING") pending += count;
       else if (row.status === "SCHEDULED") scheduled += count;
+      else if (row.status === "NO_SHOW") noShow += count;
 
       const doctorCounts = countsByDoctor.get(row.doctorId);
       if (!doctorCounts) continue;
@@ -906,6 +1050,8 @@ export const getClinicStats = async (req: Request, res: Response) => {
 
       if (row.status === "COMPLETED") {
         doctorCounts.completed += count;
+      } else if (row.status === "NO_SHOW") {
+        doctorCounts.noShow += count;
       }
     }
 
@@ -931,6 +1077,7 @@ export const getClinicStats = async (req: Request, res: Response) => {
         booked: counts.booked,
         completed: counts.completed,
         cancelled: counts.cancelled,
+        noShow: counts.noShow,
         capacity,
         utilisation: capacity > 0 ? counts.booked / capacity : 0,
       };
@@ -949,6 +1096,7 @@ export const getClinicStats = async (req: Request, res: Response) => {
         completed,
         upcoming,
         cancelled,
+        noShow,
         rescheduled,
         cancellationRate: total > 0 ? cancelled / total : 0,
         utilisation: totalCapacity > 0 ? totalBooked / totalCapacity : 0,
@@ -960,6 +1108,7 @@ export const getClinicStats = async (req: Request, res: Response) => {
           scheduled,
           completed,
           cancelled,
+          noShow,
         },
       },
     });
