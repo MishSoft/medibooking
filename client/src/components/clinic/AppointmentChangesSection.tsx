@@ -4,7 +4,10 @@ import { ClockHistoryIcon } from "../../assets/icons/Icons";
 import {
   useClinicAppointments,
   useClinicDoctors,
+  useRecordAppointmentOutcome,
 } from "../../hooks/useClinic";
+import type { RecordOutcomePayload } from "../../api/clinic.api";
+import { notify } from "../../utils/notify";
 import { AppointmentStatus } from "../../types/appointment";
 import type {
   ClinicAppointment,
@@ -81,6 +84,7 @@ function AppointmentChangesSection() {
     isPlaceholderData,
     error,
   } = useClinicAppointments(filters);
+  const outcomeMutation = useRecordAppointmentOutcome();
 
   const counts = {
     cancelled: appointments.filter(viewFilters.cancelled).length,
@@ -98,9 +102,50 @@ function AppointmentChangesSection() {
       setVisibleCount(PAGE_SIZE);
     };
 
+  const recordOutcome = (
+    appointment: ClinicAppointment,
+    status: RecordOutcomePayload["status"],
+  ) =>
+    outcomeMutation.mutate(
+      { id: appointment.id, status },
+      {
+        onSuccess: () =>
+          notify.success(
+            status === "COMPLETED" ? "Marked as completed" : "Marked as no-show",
+            `${appointment.patient.firstName} ${appointment.patient.lastName}`,
+          ),
+        onError: (mutationError) => notify.error(mutationError),
+      },
+    );
+
   const renderActions = (appointment: ClinicAppointment) => {
-    // Past appointments are history only
-    if (new Date(appointment.startsAt) <= new Date()) return undefined;
+    if (new Date(appointment.startsAt) <= new Date()) {
+      // Past open appointments still need an outcome; the rest are history
+      if (!viewFilters.open(appointment)) return undefined;
+
+      const isSaving =
+        outcomeMutation.isPending &&
+        outcomeMutation.variables?.id === appointment.id;
+
+      return (
+        <>
+          <Button
+            disabled={isSaving}
+            onClick={() => recordOutcome(appointment, "COMPLETED")}
+            variant="secondary"
+          >
+            Mark completed
+          </Button>
+          <Button
+            disabled={isSaving}
+            onClick={() => recordOutcome(appointment, "NO_SHOW")}
+            variant="secondary"
+          >
+            No-show
+          </Button>
+        </>
+      );
+    }
 
     if (appointment.status === AppointmentStatus.CANCELLED) {
       return (
