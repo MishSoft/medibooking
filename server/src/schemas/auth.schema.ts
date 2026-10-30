@@ -2,7 +2,7 @@ import { z } from "zod";
 import { Gender, Role } from "../generated/prisma";
 
 export const baseUserSchema = z.object({
-  email: z.string().email("Invalid email format."),
+  email: z.string().trim().toLowerCase().email("Invalid email format."),
   password: z.string().min(6, "Password must be at least 6 characters."),
   firstName: z.string().min(2, "First name is required (min. 2 characters)."),
   lastName: z.string().min(2, "Last name is required (min. 2 characters)."),
@@ -50,8 +50,11 @@ export const doctorRegisterSchema = baseUserSchema.extend({
 export const loginSchema = z.object({
   identifier: z
     .string()
+    .trim()
     .min(1, "Enter your email or National ID Number (Personal Code)"),
   password: z.string().min(1, "Password is required."),
+  // The sign-in form's fixed role; login only succeeds for accounts of this role
+  role: z.nativeEnum(Role, { message: "Sign-in portal is required." }),
 });
 
 export type PatientRegisterInput = z.infer<typeof patientRegisterSchema>;
