@@ -64,7 +64,7 @@ const getPeriodRange = (period: Period) => {
 
 function AppointmentChangesSection() {
   const [view, setView] = useState<ChangeView>("cancelled");
-  const [period, setPeriod] = useState<Period>("all");
+  const [period, setPeriod] = useState<Period>("upcoming");
   const [doctorId, setDoctorId] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [rescheduling, setRescheduling] = useState<ClinicAppointment | null>(
