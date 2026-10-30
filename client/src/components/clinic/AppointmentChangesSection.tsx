@@ -23,7 +23,7 @@ import CancelAppointmentModal from "./CancelAppointmentModal";
 import ClinicAppointmentCard from "./ClinicAppointmentCard";
 import RescheduleModal from "./RescheduleModal";
 
-type ChangeView = "cancelled" | "rescheduled" | "open";
+type ChangeView = "cancelled" | "rescheduled" | "open" | "noShow";
 type Period = "upcoming" | "past" | "all";
 
 const PAGE_SIZE = 20;
@@ -36,12 +36,14 @@ const viewFilters: Record<ChangeView, (apt: ClinicAppointment) => boolean> = {
   open: (apt) =>
     apt.status === AppointmentStatus.SCHEDULED ||
     apt.status === AppointmentStatus.PENDING,
+  noShow: (apt) => apt.status === AppointmentStatus.NO_SHOW,
 };
 
 const emptyMessages: Record<ChangeView, string> = {
   cancelled: "No cancelled appointments for these filters.",
   rescheduled: "No rescheduled appointments for these filters.",
   open: "No open appointments for these filters.",
+  noShow: "No missed appointments for these filters.",
 };
 
 const periodOptions = [
@@ -90,6 +92,7 @@ function AppointmentChangesSection() {
     cancelled: appointments.filter(viewFilters.cancelled).length,
     rescheduled: appointments.filter(viewFilters.rescheduled).length,
     open: appointments.filter(viewFilters.open).length,
+    noShow: appointments.filter(viewFilters.noShow).length,
   };
   const listed = appointments.filter(viewFilters[view]);
   const visible = listed.slice(0, visibleCount);
@@ -181,6 +184,7 @@ function AppointmentChangesSection() {
               count: counts.rescheduled,
             },
             { value: "open", label: "Open", count: counts.open },
+            { value: "noShow", label: "No-show", count: counts.noShow },
           ]}
           value={view}
         />
