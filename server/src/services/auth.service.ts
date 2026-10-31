@@ -10,6 +10,7 @@ import {
 } from "../schemas/auth.schema";
 import { Request, Response } from "express";
 import { InvalidCredentialsError } from "../utils/errors";
+import { buildDefaultScheduleDays } from "../config/booking";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -215,14 +216,11 @@ export class AuthService {
       });
 
       // Automatically create a default schedule for the new doctor.
-      await tx.doctorSchedule.create({
-        data: {
+      await tx.doctorScheduleDay.createMany({
+        data: buildDefaultScheduleDays().map((day) => ({
           doctorId: doctorProfile.id,
-          workingDays: [1, 2, 3, 4, 5],
-          startTime: "09:00",
-          endTime: "17:00",
-          slotMinutes: 30,
-        },
+          ...day,
+        })),
       });
 
       return { user, doctorProfile };
@@ -348,13 +346,15 @@ export class AuthService {
                 name: true,
               },
             },
-            schedule: {
+            scheduleDays: {
               select: {
-                workingDays: true,
+                weekday: true,
+                isWorking: true,
                 startTime: true,
                 endTime: true,
                 slotMinutes: true,
               },
+              orderBy: { weekday: "asc" },
             },
           },
         },

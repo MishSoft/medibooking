@@ -10,6 +10,7 @@ import {
   getClinicNow,
   generateScheduleSlots,
   MAX_MONTHS_AHEAD,
+  scheduleDaysSelect,
 } from "../config/booking";
 import { DateTime } from "luxon";
 
@@ -86,14 +87,7 @@ export const getDoctors = async (req: Request, res: Response) => {
             address: true,
           },
         },
-        schedule: {
-          select: {
-            workingDays: true,
-            startTime: true,
-            endTime: true,
-            slotMinutes: true,
-          },
-        },
+        scheduleDays: scheduleDaysSelect,
       },
     });
 
@@ -182,14 +176,7 @@ export const getDoctorsSlots = async (req: Request, res: Response) => {
       where: { id },
       select: {
         id: true,
-        schedule: {
-          select: {
-            workingDays: true,
-            startTime: true,
-            endTime: true,
-            slotMinutes: true,
-          },
-        },
+        scheduleDays: scheduleDaysSelect,
       },
     });
 
@@ -201,7 +188,7 @@ export const getDoctorsSlots = async (req: Request, res: Response) => {
     }
 
     // Doctor without a configured schedule has no available slots.
-    if (!doctor.schedule) {
+    if (doctor.scheduleDays.length === 0) {
       return res.status(200).json({
         success: true,
         data: [],
@@ -234,7 +221,7 @@ export const getDoctorsSlots = async (req: Request, res: Response) => {
       months: MAX_MONTHS_AHEAD,
     });
 
-    const slots = generateScheduleSlots(dayLocal, doctor.schedule).map(
+    const slots = generateScheduleSlots(dayLocal, doctor.scheduleDays).map(
       (slot) => {
         const slotUtc = slot.toUTC();
         const slotMillis = slotUtc.toMillis();

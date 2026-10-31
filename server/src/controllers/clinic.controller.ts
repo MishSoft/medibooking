@@ -7,6 +7,7 @@ import {
   CLINIC_TZ,
   getClinicNow,
   generateScheduleSlots,
+  scheduleDaysSelect,
   validateScheduledSlot,
 } from "../config/booking";
 
@@ -78,13 +79,14 @@ export const getClinicSpecialties = async (req: Request, res: Response) => {
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-const scheduleSchema = z
+const scheduleDaySchema = z
   .object({
-    workingDays: z
-      .array(z.number().int().min(1).max(7), {
-        message: "Working days must be numbers from 1 (Monday) to 7 (Sunday).",
-      })
-      .min(1, "Select at least one working day."),
+    weekday: z
+      .number()
+      .int()
+      .min(1, "Weekday must be a number from 1 (Monday) to 7 (Sunday).")
+      .max(7, "Weekday must be a number from 1 (Monday) to 7 (Sunday)."),
+    isWorking: z.boolean({ message: "isWorking must be true or false." }),
     startTime: z.string().regex(TIME_RE, "Start time must use HH:mm."),
     endTime: z.string().regex(TIME_RE, "End time must use HH:mm."),
     slotMinutes: z.union(
@@ -98,15 +100,8 @@ const scheduleSchema = z
       { message: "Slot length must be 15, 20, 30, 45 or 60 minutes." },
     ),
   })
+  // Days turned off keep their hours, so every day is validated
   .superRefine((schedule, ctx) => {
-    if (new Set(schedule.workingDays).size !== schedule.workingDays.length) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["workingDays"],
-        message: "Working days must not contain duplicates.",
-      });
-    }
-
     // Avoid secondary time comparisons when either time has an invalid format.
     if (!TIME_RE.test(schedule.startTime) || !TIME_RE.test(schedule.endTime)) {
       return;
@@ -135,6 +130,33 @@ const scheduleSchema = z
     }
   });
 
+// The whole week: exactly one entry per weekday
+const scheduleSchema = z
+  .object({
+    days: z
+      .array(scheduleDaySchema)
+      .length(7, "The schedule must contain all 7 weekdays."),
+  })
+  .superRefine((schedule, ctx) => {
+    const weekdays = new Set(schedule.days.map((day) => day.weekday));
+
+    if (weekdays.size !== schedule.days.length) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["days"],
+        message: "Each weekday must appear exactly once.",
+      });
+    }
+
+    if (!schedule.days.some((day) => day.isWorking)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["days"],
+        message: "Select at least one working day.",
+      });
+    }
+  });
+
 const clinicDoctorSelect = {
   id: true,
   primarySpecialty: true,
@@ -154,14 +176,7 @@ const clinicDoctorSelect = {
       address: true,
     },
   },
-  schedule: {
-    select: {
-      workingDays: true,
-      startTime: true,
-      endTime: true,
-      slotMinutes: true,
-    },
-  },
+  scheduleDays: scheduleDaysSelect,
 } as const;
 
 const clinicAppointmentSelect = {
@@ -304,11 +319,13 @@ export const updateClinicDoctorSchedule = async (
       });
     }
 
-    await prisma.doctorSchedule.upsert({
-      where: { doctorId },
-      create: { doctorId, ...validation.data },
-      update: validation.data,
-    });
+    // Replace the whole week atomically so a partial save can't happen
+    await prisma.$transaction([
+      prisma.doctorScheduleDay.deleteMany({ where: { doctorId } }),
+      prisma.doctorScheduleDay.createMany({
+        data: validation.data.days.map((day) => ({ doctorId, ...day })),
+      }),
+    ]);
 
     const updatedDoctor = await prisma.doctorProfile.findUnique({
       where: { id: doctorId },
@@ -505,14 +522,7 @@ export const rescheduleClinicAppointment = async (
         doctor: {
           select: {
             id: true,
-            schedule: {
-              select: {
-                workingDays: true,
-                startTime: true,
-                endTime: true,
-                slotMinutes: true,
-              },
-            },
+            scheduleDays: scheduleDaysSelect,
           },
         },
       },
@@ -539,7 +549,7 @@ export const rescheduleClinicAppointment = async (
       });
     }
 
-    if (!appointment.doctor.schedule) {
+    if (appointment.doctor.scheduleDays.length === 0) {
       return res.status(409).json({
         success: false,
         message: "The doctor has no configured schedule.",
@@ -548,7 +558,7 @@ export const rescheduleClinicAppointment = async (
 
     const validationError = validateScheduledSlot(
       newStartLocal,
-      appointment.doctor.schedule,
+      appointment.doctor.scheduleDays,
       getClinicNow(),
     );
 
@@ -1063,13 +1073,11 @@ export const getClinicStats = async (req: Request, res: Response) => {
       const counts = countsByDoctor.get(doctor.id)!;
       let capacity = 0;
 
-      if (doctor.schedule) {
-        let day = firstDay;
+      let day = firstDay;
 
-        while (day.toMillis() < toLocal.toMillis()) {
-          capacity += generateScheduleSlots(day, doctor.schedule).length;
-          day = day.plus({ days: 1 });
-        }
+      while (day.toMillis() < toLocal.toMillis()) {
+        capacity += generateScheduleSlots(day, doctor.scheduleDays).length;
+        day = day.plus({ days: 1 });
       }
 
       return {

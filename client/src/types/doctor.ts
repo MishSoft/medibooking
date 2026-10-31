@@ -15,11 +15,17 @@ export type ClinicSpecialty = {
 // Sunday; api/doctors.api.ts converts between the two.
 export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
-export type DoctorSchedule = {
-  workingDays: Weekday[];
+// A day turned off keeps its hours, so turning it back on restores them
+export type ScheduleDay = {
+  weekday: Weekday;
+  isWorking: boolean;
   startTime: string; // "HH:mm", clinic time
   endTime: string; // "HH:mm", clinic time
   slotMinutes: number;
+};
+
+export type DoctorSchedule = {
+  days: ScheduleDay[]; // always 7, Monday first (weekOrder)
 };
 
 export type Doctor = {
