@@ -7,6 +7,7 @@ import {
   CLINIC_TZ,
   getClinicNow,
   generateScheduleSlots,
+  scheduleDaysSelect,
   validateScheduledSlot,
 } from "../config/booking";
 
@@ -154,14 +155,7 @@ const clinicDoctorSelect = {
       address: true,
     },
   },
-  schedule: {
-    select: {
-      workingDays: true,
-      startTime: true,
-      endTime: true,
-      slotMinutes: true,
-    },
-  },
+  scheduleDays: scheduleDaysSelect,
 } as const;
 
 const clinicAppointmentSelect = {
@@ -505,14 +499,7 @@ export const rescheduleClinicAppointment = async (
         doctor: {
           select: {
             id: true,
-            schedule: {
-              select: {
-                workingDays: true,
-                startTime: true,
-                endTime: true,
-                slotMinutes: true,
-              },
-            },
+            scheduleDays: scheduleDaysSelect,
           },
         },
       },
@@ -539,7 +526,7 @@ export const rescheduleClinicAppointment = async (
       });
     }
 
-    if (!appointment.doctor.schedule) {
+    if (appointment.doctor.scheduleDays.length === 0) {
       return res.status(409).json({
         success: false,
         message: "The doctor has no configured schedule.",
@@ -548,7 +535,7 @@ export const rescheduleClinicAppointment = async (
 
     const validationError = validateScheduledSlot(
       newStartLocal,
-      appointment.doctor.schedule,
+      appointment.doctor.scheduleDays,
       getClinicNow(),
     );
 
@@ -1063,13 +1050,11 @@ export const getClinicStats = async (req: Request, res: Response) => {
       const counts = countsByDoctor.get(doctor.id)!;
       let capacity = 0;
 
-      if (doctor.schedule) {
-        let day = firstDay;
+      let day = firstDay;
 
-        while (day.toMillis() < toLocal.toMillis()) {
-          capacity += generateScheduleSlots(day, doctor.schedule).length;
-          day = day.plus({ days: 1 });
-        }
+      while (day.toMillis() < toLocal.toMillis()) {
+        capacity += generateScheduleSlots(day, doctor.scheduleDays).length;
+        day = day.plus({ days: 1 });
       }
 
       return {

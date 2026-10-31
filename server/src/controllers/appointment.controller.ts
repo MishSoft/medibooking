@@ -8,6 +8,7 @@ import {
 import {
   CLINIC_TZ,
   getClinicNow,
+  scheduleDaysSelect,
   validateScheduledSlot,
 } from "../config/booking";
 
@@ -76,14 +77,7 @@ export const createAppointment = async (req: Request, res: Response) => {
       where: { id: doctorId },
       select: {
         id: true,
-        schedule: {
-          select: {
-            workingDays: true,
-            startTime: true,
-            endTime: true,
-            slotMinutes: true,
-          },
-        },
+        scheduleDays: scheduleDaysSelect,
       },
     });
 
@@ -94,7 +88,7 @@ export const createAppointment = async (req: Request, res: Response) => {
       });
     }
 
-    if (!doctor.schedule) {
+    if (doctor.scheduleDays.length === 0) {
       return res.status(409).json({
         success: false,
         message: "The doctor has no configured schedule.",
@@ -104,7 +98,7 @@ export const createAppointment = async (req: Request, res: Response) => {
     // Validate the requested time against the doctor's schedule.
     const validationError = validateScheduledSlot(
       startLocal,
-      doctor.schedule,
+      doctor.scheduleDays,
       getClinicNow(),
     );
 

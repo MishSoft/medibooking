@@ -72,21 +72,41 @@ export const generateDaySlots = (dayLocal: DateTime): DateTime[] => {
 
 
 
-export interface ScheduleConfig {
-  workingDays: number[];
+export interface ScheduleDayConfig {
+  weekday: number; // Luxon weekday: Monday = 1, Sunday = 7
+  isWorking: boolean;
   startTime: string;
   endTime: string;
   slotMinutes: number;
 }
 
+// Prisma select for a doctor's week, Monday first
+export const scheduleDaysSelect = {
+  select: {
+    weekday: true,
+    isWorking: true,
+    startTime: true,
+    endTime: true,
+    slotMinutes: true,
+  },
+  orderBy: { weekday: "asc" },
+} as const;
+
+// The day's row only when the doctor works that weekday
+const findWorkingDay = (
+  days: ScheduleDayConfig[],
+  weekday: number,
+): ScheduleDayConfig | undefined =>
+  days.find((day) => day.weekday === weekday && day.isWorking);
+
 export const generateScheduleSlots = (
   dayLocal: DateTime,
-  schedule: ScheduleConfig,
+  days: ScheduleDayConfig[],
 ): DateTime[] => {
   const dayStart = dayLocal.startOf("day");
+  const schedule = findWorkingDay(days, dayStart.weekday);
 
-  // Luxon weekday: Monday = 1, Sunday = 7
-  if (!schedule.workingDays.includes(dayStart.weekday)) {
+  if (!schedule) {
     return [];
   }
 
@@ -127,7 +147,7 @@ export const generateScheduleSlots = (
 
 export const validateScheduledSlot = (
   startLocal: DateTime,
-  schedule: ScheduleConfig,
+  days: ScheduleDayConfig[],
   nowLocal: DateTime = getClinicNow(),
 ): string | null => {
   if (!startLocal.isValid) {
@@ -142,7 +162,9 @@ export const validateScheduledSlot = (
     return "Appointments cannot be booked more than 2 months in advance.";
   }
 
-  if (!schedule.workingDays.includes(startLocal.weekday)) {
+  const schedule = findWorkingDay(days, startLocal.weekday);
+
+  if (!schedule) {
     return "The doctor does not work on this day.";
   }
 
