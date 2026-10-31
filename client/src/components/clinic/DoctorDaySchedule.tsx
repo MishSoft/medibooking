@@ -6,7 +6,7 @@ import Tag from "../../shared/ui/Tag";
 import {
   formatWorkingHours,
   getSlotsPerDay,
-  isWorkingDay,
+  getWorkingDay,
 } from "../../utils/schedule";
 import { getDoctorName } from "../doctors/DoctorCard";
 import ClinicAppointmentCard from "./ClinicAppointmentCard";
@@ -25,8 +25,10 @@ function DoctorDaySchedule({
   appointments,
   onEditSchedule,
 }: DoctorDayScheduleProps) {
-  const isWorking = isWorkingDay(doctor.schedule, date);
-  const capacity = isWorking ? getSlotsPerDay(doctor.schedule) : 0;
+  // The selected date's own hours; undefined on a day off
+  const workingDay = getWorkingDay(doctor.schedule, date);
+  const isWorking = workingDay !== undefined;
+  const capacity = workingDay ? getSlotsPerDay(workingDay) : 0;
   const booked = appointments.filter(
     (apt) => apt.status !== AppointmentStatus.CANCELLED,
   ).length;
@@ -44,11 +46,11 @@ function DoctorDaySchedule({
             {doctor.specialty}
           </p>
         </div>
-        {isWorking ? (
+        {workingDay ? (
           <>
             <Tag tone="info">
               <span className="font-code">
-                {formatWorkingHours(doctor.schedule)}
+                {formatWorkingHours(workingDay)}
               </span>
             </Tag>
             <Tag tone={booked >= capacity ? "warning" : "neutral"}>
