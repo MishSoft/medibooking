@@ -7,6 +7,7 @@ import type {
   DoctorSchedule,
   Weekday,
 } from "../types/doctor";
+import { createDefaultScheduleDay, weekOrder } from "../utils/schedule";
 import type { ApiResponse } from "./auth.api";
 import { apiRequest } from "./client";
 
@@ -26,12 +27,13 @@ export type DoctorDto = {
   bio?: string | null;
   user: { firstName: string; lastName: string };
   clinic: ClinicDto;
-  // Only on GET /api/doctors; null = no schedule configured
-  schedule?: DoctorScheduleDto | null;
+  // Only on GET /api/doctors; [] = no schedule configured
+  scheduleDays?: ScheduleDayDto[];
 };
 
-export type DoctorScheduleDto = {
-  workingDays: number[]; // 1 = Monday … 7 = Sunday (ISO / Luxon)
+export type ScheduleDayDto = {
+  weekday: number; // 1 = Monday … 7 = Sunday (ISO / Luxon)
+  isWorking: boolean;
   startTime: string;
   endTime: string;
   slotMinutes: number;
@@ -43,17 +45,25 @@ export type TimeSlotDto = {
 };
 
 // Server weekdays are 1 = Mon … 7 = Sun; client uses Date#getDay (0 = Sun)
-export const fromServerWeekdays = (days: number[]): Weekday[] =>
-  days.map((day) => (day % 7) as Weekday);
+export const fromServerWeekday = (day: number): Weekday => (day % 7) as Weekday;
 
-export const toServerWeekdays = (days: Weekday[]): number[] =>
-  days.map((day) => (day === 0 ? 7 : day));
+export const toServerWeekday = (day: Weekday): number => (day === 0 ? 7 : day);
 
-export const toDoctorSchedule = (dto: DoctorScheduleDto): DoctorSchedule => ({
-  workingDays: fromServerWeekdays(dto.workingDays),
-  startTime: dto.startTime,
-  endTime: dto.endTime,
-  slotMinutes: dto.slotMinutes,
+// Always 7 days, Monday first; a weekday missing on the server gets the default
+export const toDoctorSchedule = (dtos: ScheduleDayDto[]): DoctorSchedule => ({
+  days: weekOrder.map((weekday) => {
+    const dto = dtos.find((day) => fromServerWeekday(day.weekday) === weekday);
+
+    return dto
+      ? {
+          weekday,
+          isWorking: dto.isWorking,
+          startTime: dto.startTime,
+          endTime: dto.endTime,
+          slotMinutes: dto.slotMinutes,
+        }
+      : createDefaultScheduleDay(weekday);
+  }),
 });
 
 export const toClinic = (dto: ClinicDto): Clinic => ({
@@ -73,9 +83,11 @@ export const toDoctor = (dto: DoctorDto): Doctor => ({
   clinic: toClinic(dto.clinic),
   // Keep "not sent" (undefined) distinct from "no schedule" (null)
   schedule:
-    dto.schedule === undefined
+    dto.scheduleDays === undefined
       ? undefined
-      : dto.schedule && toDoctorSchedule(dto.schedule),
+      : dto.scheduleDays.length > 0
+        ? toDoctorSchedule(dto.scheduleDays)
+        : null,
 });
 
 const toQueryString = (filters: DoctorFiltersValue) => {
