@@ -1,12 +1,17 @@
 import { useState, type FormEvent } from "react";
 import { useUpdateDoctorSchedule } from "../../hooks/useClinic";
-import type { ClinicDoctor, DoctorSchedule, Weekday } from "../../types/clinic";
+import type {
+  ClinicDoctor,
+  DoctorSchedule,
+  ScheduleDay,
+  Weekday,
+} from "../../types/clinic";
 import Button from "../../shared/ui/Button";
 import Input from "../../shared/ui/Input";
 import Modal from "../../shared/ui/Modal";
 import Select from "../../shared/ui/Select";
 import { notify } from "../../utils/notify";
-import { dayLabels, toTime, weekOrder } from "../../utils/schedule";
+import { dayLabels, toTime } from "../../utils/schedule";
 import { getDoctorName } from "../doctors/DoctorCard";
 
 type EditScheduleModalProps = {
@@ -14,18 +19,17 @@ type EditScheduleModalProps = {
   onClose: () => void;
 };
 
+type ScheduleError = {
+  message: string;
+  weekday?: Weekday; // the day to switch to so the problem is visible
+};
+
 const slotOptions = [15, 20, 30, 45, 60].map((minutes) => ({
   value: String(minutes),
   label: `${minutes} minutes`,
 }));
 
-const validateSchedule = ({
-  workingDays,
-  startTime,
-  endTime,
-  slotMinutes,
-}: DoctorSchedule) => {
-  if (workingDays.length === 0) return "Select at least one working day.";
+const validateDay = ({ startTime, endTime, slotMinutes }: ScheduleDay) => {
   if (!startTime || !endTime) return "Set both start and end time.";
 
   const today = new Date();
@@ -37,25 +41,56 @@ const validateSchedule = ({
   return "";
 };
 
+// Days turned off keep their hours and are saved too, so every day is checked
+const validateSchedule = ({ days }: DoctorSchedule): ScheduleError | null => {
+  if (!days.some((day) => day.isWorking)) {
+    return { message: "Select at least one working day." };
+  }
+
+  for (const day of days) {
+    const message = validateDay(day);
+    if (message) {
+      return { message: `${dayLabels[day.weekday]}: ${message}`, weekday: day.weekday };
+    }
+  }
+
+  return null;
+};
+
 // Mounted only while editing, so the form starts from the doctor's current schedule
 function EditScheduleModal({ doctor, onClose }: EditScheduleModalProps) {
   const [schedule, setSchedule] = useState<DoctorSchedule>(doctor.schedule);
+  // Start on the first working day, or Monday when none is on
+  const [selectedWeekday, setSelectedWeekday] = useState<Weekday>(
+    () =>
+      (doctor.schedule.days.find((day) => day.isWorking) ??
+        doctor.schedule.days[0]).weekday,
+  );
   const [error, setError] = useState("");
   const updateSchedule = useUpdateDoctorSchedule();
 
-  const toggleDay = (day: Weekday) =>
+  const selectedDay = schedule.days.find(
+    (day) => day.weekday === selectedWeekday,
+  )!;
+
+  // Edits apply to the selected day only; other days keep their own values
+  const updateSelectedDay = (changes: Partial<ScheduleDay>) =>
     setSchedule((current) => ({
-      ...current,
-      workingDays: current.workingDays.includes(day)
-        ? current.workingDays.filter((item) => item !== day)
-        : [...current.workingDays, day],
+      days: current.days.map((day) =>
+        day.weekday === selectedWeekday ? { ...day, ...changes } : day,
+      ),
     }));
 
   const handleSubmit = async (event?: FormEvent) => {
     event?.preventDefault();
     const validationError = validateSchedule(schedule);
-    setError(validationError);
-    if (validationError) return;
+    setError(validationError?.message ?? "");
+    if (validationError) {
+      if (validationError.weekday !== undefined) {
+        setSelectedWeekday(validationError.weekday);
+      }
+      return;
+    }
 
     try {
       await updateSchedule.mutateAsync({ doctorId: doctor.id, schedule });
@@ -74,7 +109,7 @@ function EditScheduleModal({ doctor, onClose }: EditScheduleModalProps) {
 
   return (
     <Modal
-      description="Weekly working days and hours used for booking slots."
+      description="Working hours and slot length for each day of the week."
       footer={
         <>
           <Button disabled={isSaving} onClick={onClose} variant="secondary">
@@ -92,61 +127,95 @@ function EditScheduleModal({ doctor, onClose }: EditScheduleModalProps) {
       <form className="space-y-5" noValidate onSubmit={handleSubmit}>
         <fieldset>
           <legend className="mb-1.5 text-label-md text-on-surface">
-            Working days
+            Day
           </legend>
           <div className="flex flex-wrap gap-2">
-            {weekOrder.map((day) => {
-              const isActive = schedule.workingDays.includes(day);
+            {schedule.days.map((day) => {
+              const isSelected = day.weekday === selectedWeekday;
 
               return (
                 <button
-                  aria-pressed={isActive}
-                  className={`min-h-11 min-w-14 cursor-pointer rounded-lg px-3 py-2 text-label-lg transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
-                    isActive
+                  aria-label={`${dayLabels[day.weekday]}, ${day.isWorking ? "working" : "day off"}`}
+                  aria-pressed={isSelected}
+                  className={`relative min-h-11 min-w-14 cursor-pointer rounded-lg px-3 py-2 text-label-lg transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+                    isSelected
                       ? "bg-primary-container text-on-primary-container shadow-elevation-1"
                       : "bg-surface-container text-on-surface-variant hover:bg-surface-highest hover:text-on-surface"
-                  }`}
-                  key={day}
-                  onClick={() => toggleDay(day)}
+                  } ${day.isWorking ? "" : "line-through opacity-70"}`}
+                  key={day.weekday}
+                  onClick={() => setSelectedWeekday(day.weekday)}
                   type="button"
                 >
-                  {dayLabels[day]}
+                  {dayLabels[day.weekday]}
+                  {day.isWorking && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-primary"
+                    />
+                  )}
                 </button>
               );
             })}
           </div>
         </fieldset>
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Input
-            label="Start time"
-            onChange={(event) =>
-              setSchedule({ ...schedule, startTime: event.target.value })
-            }
-            required
-            type="time"
-            value={schedule.startTime}
-          />
-          <Input
-            label="End time"
-            onChange={(event) =>
-              setSchedule({ ...schedule, endTime: event.target.value })
-            }
-            required
-            type="time"
-            value={schedule.endTime}
-          />
-          <Select
-            label="Slot length"
-            onChange={(event) =>
-              setSchedule({
-                ...schedule,
-                slotMinutes: Number(event.target.value),
-              })
-            }
-            options={slotOptions}
-            value={String(schedule.slotMinutes)}
-          />
+        <div className="space-y-4 rounded-xl bg-surface-container p-4">
+          <label className="flex cursor-pointer items-center justify-between gap-3">
+            <span className="text-label-lg text-on-surface">
+              {dayLabels[selectedDay.weekday]} · Working day
+            </span>
+            <button
+              aria-checked={selectedDay.isWorking}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+                selectedDay.isWorking ? "bg-primary" : "bg-surface-highest"
+              }`}
+              onClick={() =>
+                updateSelectedDay({ isWorking: !selectedDay.isWorking })
+              }
+              role="switch"
+              type="button"
+            >
+              <span
+                aria-hidden="true"
+                className={`inline-block h-5 w-5 rounded-full bg-surface-lowest shadow-elevation-1 transition-transform ${
+                  selectedDay.isWorking ? "translate-x-5.5" : "translate-x-0.5"
+                }`}
+              />
+            </button>
+          </label>
+
+          {/* Hours stay saved while the day is off, so turning it back on restores them */}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Input
+              disabled={!selectedDay.isWorking}
+              label="Start time"
+              onChange={(event) =>
+                updateSelectedDay({ startTime: event.target.value })
+              }
+              required
+              type="time"
+              value={selectedDay.startTime}
+            />
+            <Input
+              disabled={!selectedDay.isWorking}
+              label="End time"
+              onChange={(event) =>
+                updateSelectedDay({ endTime: event.target.value })
+              }
+              required
+              type="time"
+              value={selectedDay.endTime}
+            />
+            <Select
+              disabled={!selectedDay.isWorking}
+              label="Slot length"
+              onChange={(event) =>
+                updateSelectedDay({ slotMinutes: Number(event.target.value) })
+              }
+              options={slotOptions}
+              value={String(selectedDay.slotMinutes)}
+            />
+          </div>
         </div>
 
         {error && (

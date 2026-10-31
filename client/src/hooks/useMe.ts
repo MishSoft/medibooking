@@ -24,8 +24,8 @@ export function useMyDoctorSchedule() {
     queryKey: meQueryKey,
     queryFn: fetchMe,
     select: (me) => {
-      const schedule = me.doctorProfile?.schedule;
-      return schedule ? toDoctorSchedule(schedule) : null;
+      const days = me.doctorProfile?.scheduleDays ?? [];
+      return days.length > 0 ? toDoctorSchedule(days) : null;
     },
   });
 }

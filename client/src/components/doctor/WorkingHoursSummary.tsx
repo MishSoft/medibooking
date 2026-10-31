@@ -1,6 +1,6 @@
 import { ClockHistoryIcon } from "../../assets/icons/Icons";
 import { useMyDoctorSchedule } from "../../hooks/useMe";
-import { formatSchedule } from "../../utils/schedule";
+import { formatSchedule, formatSlotMinutes } from "../../utils/schedule";
 
 function WorkingHoursSummary() {
   const { data: schedule, isPending, error } = useMyDoctorSchedule();
@@ -15,7 +15,8 @@ function WorkingHoursSummary() {
           <>
             <span className="text-on-surface-variant">Working hours:</span>
             <span className="font-code text-code-sm text-on-surface">
-              {formatSchedule(schedule)} · {schedule.slotMinutes}-min visits
+              {formatSchedule(schedule)} · {formatSlotMinutes(schedule)}-min
+              visits
             </span>
           </>
         ) : (

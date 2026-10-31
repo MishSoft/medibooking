@@ -20,15 +20,16 @@ import {
   doctorsApi,
   toDoctor,
   toDoctorSchedule,
-  toServerWeekdays,
+  toServerWeekday,
   type DoctorDto,
-  type DoctorScheduleDto,
+  type ScheduleDayDto,
 } from "./doctors.api";
+import { createDefaultSchedule } from "../utils/schedule";
 
 // Shapes returned by the server's /api/clinic endpoints (Prisma select)
-export type ClinicDoctorDto = Omit<DoctorDto, "user" | "schedule"> & {
+export type ClinicDoctorDto = Omit<DoctorDto, "user" | "scheduleDays"> & {
   user: DoctorDto["user"] & { email: string };
-  schedule: DoctorScheduleDto | null;
+  scheduleDays: ScheduleDayDto[];
 };
 
 export type ClinicAppointmentDto = AppointmentDto & {
@@ -46,19 +47,15 @@ export type ClinicStatsDto = Omit<ClinicStats, "workload"> & {
   workload: DoctorWorkloadDto[];
 };
 
-// A doctor without a schedule shows "No working days" and can be set up from
-// the Schedules tab; registration and the migration normally create one
-const emptySchedule: DoctorSchedule = {
-  workingDays: [],
-  startTime: "09:00",
-  endTime: "17:00",
-  slotMinutes: 30,
-};
-
+// Registration and the migration normally create all 7 days; a doctor without
+// any starts from the default week (Mon–Fri, 09:00–17:00) in the editor
 export const toClinicDoctor = (dto: ClinicDoctorDto): ClinicDoctor => ({
-  ...toDoctor({ ...dto, schedule: undefined }),
+  ...toDoctor({ ...dto, scheduleDays: undefined }),
   email: dto.user.email,
-  schedule: dto.schedule ? toDoctorSchedule(dto.schedule) : emptySchedule,
+  schedule:
+    dto.scheduleDays.length > 0
+      ? toDoctorSchedule(dto.scheduleDays)
+      : createDefaultSchedule(),
 });
 
 export const toClinicAppointment = (
@@ -86,14 +83,18 @@ export const toClinicStats = (dto: ClinicStatsDto): ClinicStats => ({
   })),
 });
 
-// Request body for PUT /api/clinic/doctors/:id/schedule (server weekdays)
+// Request body for PUT /api/clinic/doctors/:id/schedule: the whole week,
+// server weekdays
 export const toDoctorScheduleBody = (
   schedule: DoctorSchedule,
-): DoctorScheduleDto => ({
-  workingDays: toServerWeekdays(schedule.workingDays),
-  startTime: schedule.startTime,
-  endTime: schedule.endTime,
-  slotMinutes: schedule.slotMinutes,
+): { days: ScheduleDayDto[] } => ({
+  days: schedule.days.map((day) => ({
+    weekday: toServerWeekday(day.weekday),
+    isWorking: day.isWorking,
+    startTime: day.startTime,
+    endTime: day.endTime,
+    slotMinutes: day.slotMinutes,
+  })),
 });
 
 export type RescheduleAppointmentPayload = {

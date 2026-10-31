@@ -7,7 +7,12 @@ import type { ClinicDoctor } from "../../types/clinic";
 import Avatar from "../../shared/ui/Avatar";
 import Button from "../../shared/ui/Button";
 import Tag from "../../shared/ui/Tag";
-import { formatWorkingDays, formatWorkingHours } from "../../utils/schedule";
+import {
+  formatScheduleHours,
+  formatSlotMinutes,
+  formatWorkingDays,
+  getWorkingWeekdays,
+} from "../../utils/schedule";
 import { getDoctorName } from "../doctors/DoctorCard";
 
 type ClinicDoctorCardProps = {
@@ -57,7 +62,7 @@ function ClinicDoctorCard({ doctor, onViewSchedule }: ClinicDoctorCardProps) {
             />
             <span className="sr-only">Working days</span>
           </dt>
-          <dd>{formatWorkingDays(schedule.workingDays)}</dd>
+          <dd>{formatWorkingDays(getWorkingWeekdays(schedule))}</dd>
         </div>
         <div className="flex items-center gap-2">
           <dt>
@@ -69,9 +74,9 @@ function ClinicDoctorCard({ doctor, onViewSchedule }: ClinicDoctorCardProps) {
           </dt>
           <dd>
             <span className="font-code text-code-sm text-secondary">
-              {formatWorkingHours(schedule)}
+              {formatScheduleHours(schedule)}
             </span>{" "}
-            · {schedule.slotMinutes} min slots
+            · {formatSlotMinutes(schedule)} min slots
           </dd>
         </div>
       </dl>

@@ -2,7 +2,7 @@ import type { Appointment } from "./appointment";
 import type { Doctor, DoctorSchedule } from "./doctor";
 
 // Schedule types live with the doctor; re-exported for existing imports
-export type { DoctorSchedule, Weekday } from "./doctor";
+export type { DoctorSchedule, ScheduleDay, Weekday } from "./doctor";
 
 export type ClinicDoctor = Doctor & {
   email: string;
