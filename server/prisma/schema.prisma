@@ -83,7 +83,7 @@ model DoctorProfile {
 
   appointments  Appointment[]
   prescriptions Prescription[]
-  schedule      DoctorSchedule?
+  scheduleDays  DoctorScheduleDay[]
 }
 
 model Clinic {
@@ -145,11 +145,16 @@ model RevokedToken {
   expiresAt DateTime
 }
 
-model DoctorSchedule {
-  doctorId    String        @id
+// One row per weekday. A day turned off keeps its hours so turning it
+// back on restores them.
+model DoctorScheduleDay {
+  doctorId    String
   doctor      DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-  workingDays Int[]
-  startTime   String
-  endTime     String
-  slotMinutes Int
+  weekday     Int // 1 = Monday … 7 = Sunday (Luxon)
+  isWorking   Boolean       @default(false)
+  startTime   String        @default("09:00")
+  endTime     String        @default("17:00")
+  slotMinutes Int           @default(30)
+
+  @@id([doctorId, weekday])
 }

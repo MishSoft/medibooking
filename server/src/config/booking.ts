@@ -6,6 +6,21 @@ export const WORK_END_HOUR = 17;
 export const SLOT_MINUTES = 30;
 export const MAX_MONTHS_AHEAD = 2;
 
+// Default week for a new doctor: Mon–Fri on, every day 09:00–17:00 / 30 min
+export const DEFAULT_WORKING_DAYS = [1, 2, 3, 4, 5];
+export const DEFAULT_START_TIME = "09:00";
+export const DEFAULT_END_TIME = "17:00";
+export const DEFAULT_SLOT_MINUTES = 30;
+
+export const buildDefaultScheduleDays = () =>
+  [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({
+    weekday,
+    isWorking: DEFAULT_WORKING_DAYS.includes(weekday),
+    startTime: DEFAULT_START_TIME,
+    endTime: DEFAULT_END_TIME,
+    slotMinutes: DEFAULT_SLOT_MINUTES,
+  }));
+
 export const getClinicNow = (): DateTime => DateTime.now().setZone(CLINIC_TZ);
 
 export const parseToClinicZone = (iso: string): DateTime =>
