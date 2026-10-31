@@ -5,8 +5,9 @@ import { ApiError } from "../../api/client";
 import { BadgeCheckIcon } from "../../assets/icons/Icons";
 import { useBookAppointment } from "../../hooks/useAppointments";
 import { doctorsQueryKey, useDoctorSlots } from "../../hooks/useDoctors";
-import type { Doctor, Weekday } from "../../types/doctor";
+import type { Doctor } from "../../types/doctor";
 import { notify } from "../../utils/notify";
+import { isWorkingDay } from "../../utils/schedule";
 import Button from "../../shared/ui/Button";
 import DatePicker from "../../shared/ui/DatePicker";
 import FieldError from "../../shared/ui/FieldError";
@@ -44,9 +45,7 @@ function BookingModal({ doctor, onClose }: BookingModalProps) {
   const schedule = doctor?.schedule;
   const hasNoSchedule = schedule === null;
   const isDayOff = (day: Date) =>
-    schedule
-      ? !schedule.workingDays.includes(day.getDay() as Weekday)
-      : isWeekend(day);
+    schedule ? !isWorkingDay(schedule, day) : isWeekend(day);
 
   const refreshSlots = () =>
     queryClient.invalidateQueries({

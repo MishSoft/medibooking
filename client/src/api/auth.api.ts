@@ -4,7 +4,7 @@ import type { DoctorRegistrationFormOutput } from "../schemas/doctorRegistration
 import type { Role } from "../types/enums";
 import type { PatientRegistrationFormOutput } from "../schemas/patientRegistration.schema";
 import { apiRequest } from "./client";
-import type { DoctorScheduleDto } from "./doctors.api";
+import type { ScheduleDayDto } from "./doctors.api";
 
 export type ApiResponse<TData = unknown> = {
   success: boolean;
@@ -100,7 +100,7 @@ export type MeResponseData = AuthUser & {
   managedClinic: { id: string; name: string } | null;
   doctorProfile: {
     id: string;
-    schedule: DoctorScheduleDto | null;
+    scheduleDays: ScheduleDayDto[]; // [] = no schedule configured
   } | null;
 };
 

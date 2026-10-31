@@ -74,6 +74,28 @@ export const formatSchedule = ({ days }: DoctorSchedule) => {
     .join("; ");
 };
 
+const getWorkingDays = ({ days }: DoctorSchedule) =>
+  days.filter((day) => day.isWorking);
+
+// [1,2,3,4,5] of the schedule's working days, for formatWorkingDays
+export const getWorkingWeekdays = (schedule: DoctorSchedule) =>
+  getWorkingDays(schedule).map((day) => day.weekday);
+
+// "09:00–17:00" when every working day shares it, otherwise per-day groups
+export const formatScheduleHours = (schedule: DoctorSchedule) => {
+  const hours = new Set(getWorkingDays(schedule).map(formatWorkingHours));
+  return hours.size === 1 ? [...hours][0] : formatSchedule(schedule);
+};
+
+// "30" or a range like "15–30" when slot length differs between days
+export const formatSlotMinutes = (schedule: DoctorSchedule) => {
+  const minutes = getWorkingDays(schedule).map((day) => day.slotMinutes);
+  if (minutes.length === 0) return "";
+  const min = Math.min(...minutes);
+  const max = Math.max(...minutes);
+  return min === max ? `${min}` : `${min}–${max}`;
+};
+
 // "HH:mm" on the given day
 export const toTime = (time: string, day: Date) => parse(time, "HH:mm", day);
 
