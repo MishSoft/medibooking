@@ -656,34 +656,40 @@ const options: swaggerJsdoc.Options = {
               "application/json": {
                 schema: {
                   type: "object",
-                  required: [
-                    "workingDays",
-                    "startTime",
-                    "endTime",
-                    "slotMinutes",
-                  ],
+                  required: ["days"],
                   properties: {
-                    workingDays: {
+                    days: {
                       type: "array",
+                      minItems: 7,
+                      maxItems: 7,
+                      description:
+                        "მთელი კვირა: თითო ჩანაწერი თითოეულ დღეზე (1 = ორშაბათი … 7 = კვირა). გამორთული დღე ინახავს თავის საათებს. მინიმუმ ერთი დღე უნდა იყოს სამუშაო.",
                       items: {
-                        type: "integer",
-                        minimum: 1,
-                        maximum: 7,
+                        type: "object",
+                        required: [
+                          "weekday",
+                          "isWorking",
+                          "startTime",
+                          "endTime",
+                          "slotMinutes",
+                        ],
+                        properties: {
+                          weekday: {
+                            type: "integer",
+                            minimum: 1,
+                            maximum: 7,
+                            example: 1,
+                          },
+                          isWorking: { type: "boolean", example: true },
+                          startTime: { type: "string", example: "09:00" },
+                          endTime: { type: "string", example: "17:00" },
+                          slotMinutes: {
+                            type: "integer",
+                            enum: [15, 20, 30, 45, 60],
+                            example: 30,
+                          },
+                        },
                       },
-                      example: [1, 2, 3, 4, 5],
-                      description: "სამუშაო დღეები, 1-დან 7-მდე",
-                    },
-                    startTime: {
-                      type: "string",
-                      example: "09:00",
-                    },
-                    endTime: {
-                      type: "string",
-                      example: "17:00",
-                    },
-                    slotMinutes: {
-                      type: "integer",
-                      example: 30,
                     },
                   },
                 },
